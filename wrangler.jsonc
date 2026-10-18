@@ -6,8 +6,8 @@
   "assets": { "directory": "./public", "binding": "ASSETS" },
   "d1_databases": [{
     "binding": "DB",
-    "database_name": "stoich-provisions-orders",
-    "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+    "database_name": "stoich-provisions-orders-db",
+    "database_id": "17a96f43-372f-43ad-882e-5bb3e31df7a8"
   }],
   "vars": {
     "STORE_DOMAIN": "aqlx.shop",
