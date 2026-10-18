@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "stoich-provisions-orders",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-18",
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "stoich-provisions-orders",
+    "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+  }],
+  "vars": {
+    "STORE_DOMAIN": "aqlx.shop",
+    "INITIAL_NOTIFICATION_EMAIL": "jpcalma09@gmail.com"
+  }
+}
