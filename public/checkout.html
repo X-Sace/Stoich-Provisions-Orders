@@ -3,403 +3,244 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Stoich Provisions | Order Request</title>
   <style>
-    :root {
-      --ink: #171717;
-      --muted: #666;
-      --line: #dedede;
-      --paper: #fff;
-      --soft: #f6f6f6;
-      --accent: #111;
-    }
-
     * { box-sizing: border-box; }
-
     body {
-      margin: 0;
-      padding: 24px 16px 48px;
-      background: var(--paper);
-      color: var(--ink);
-      font-family: Arial, Helvetica, sans-serif;
-      line-height: 1.5;
+      margin: 0; padding: 24px 16px 40px;
+      color: #171717; background: #fff;
+      font-family: Arial, Helvetica, sans-serif; line-height: 1.5;
     }
-
-    .container { max-width: 760px; margin: 0 auto; }
-
-    header {
-      text-align: center;
-      padding: 12px 0 24px;
-      border-bottom: 1px solid var(--line);
-      margin-bottom: 26px;
-    }
-
-    .eyebrow {
-      font-size: 12px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    h1 { font-size: clamp(27px, 5vw, 38px); margin: 8px 0; }
-    header p { margin: 0; color: var(--muted); }
-
+    main { max-width: 760px; margin: auto; }
+    header { text-align: center; padding-bottom: 22px; border-bottom: 1px solid #ddd; margin-bottom: 22px; }
+    .eyebrow { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #666; }
+    h1 { font-size: 32px; margin: 7px 0; }
     h2 { font-size: 19px; margin: 0 0 15px; }
-
-    .section {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 20px;
-      margin-bottom: 18px;
+    .section { border: 1px solid #ddd; border-radius: 9px; padding: 20px; margin-bottom: 18px; }
+    .notice { background: #f5f5f5; border-radius: 8px; padding: 14px; margin-bottom: 18px; font-size: 14px; }
+    .field { margin-bottom: 15px; }
+    label, legend { display: block; font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+    input:not([type=radio]):not([type=checkbox]), select, textarea {
+      width: 100%; padding: 11px; border: 1px solid #ccc;
+      border-radius: 6px; font: inherit; background: white;
     }
-
-    .notice {
-      background: var(--soft);
-      padding: 14px 16px;
-      border-radius: 8px;
-      font-size: 14px;
-      margin-bottom: 18px;
-    }
-
-    .field { margin-bottom: 16px; }
-    .field:last-child { margin-bottom: 0; }
-
-    label, legend {
-      display: block;
-      font-size: 14px;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    input, select, textarea {
-      width: 100%;
-      min-height: 44px;
-      border: 1px solid #cfcfcf;
-      border-radius: 6px;
-      padding: 10px 12px;
-      font: inherit;
-      background: white;
-      color: var(--ink);
-    }
-
-    textarea { min-height: 95px; resize: vertical; }
-
-    input:focus, select:focus, textarea:focus {
-      outline: 2px solid #777;
-      outline-offset: 1px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
-
-    .choice-list { display: grid; gap: 10px; }
-
-    .choice {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      padding: 12px;
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      cursor: pointer;
-    }
-
-    .choice input {
-      width: 18px;
-      min-height: 18px;
-      margin: 3px 0 0;
-      flex: 0 0 auto;
-    }
-
-    .choice span { font-weight: 400; }
-    .choice strong { display: block; margin-bottom: 2px; }
-    .muted { color: var(--muted); font-size: 13px; }
-
-    .cart-item {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--line);
-    }
-
+    textarea { min-height: 90px; resize: vertical; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .choices { display: grid; gap: 9px; }
+    .choice { display: flex; align-items: flex-start; gap: 10px; border: 1px solid #ddd; border-radius: 7px; padding: 12px; cursor: pointer; }
+    .choice input { margin-top: 4px; }
+    .choice label { margin: 0; font-weight: 400; }
+    .choice strong { display: block; }
+    .muted, .smallprint { color: #666; font-size: 13px; }
+    .cart-item { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid #eee; }
     .cart-item:last-child { border-bottom: 0; }
-    .cart-item-name { font-weight: 700; }
-    .cart-item-detail { color: var(--muted); font-size: 13px; }
-
-    .total {
-      display: flex;
-      justify-content: space-between;
-      font-weight: 700;
-      font-size: 18px;
-      padding-top: 15px;
-    }
-
-    .button {
-      display: block;
-      width: 100%;
-      min-height: 48px;
-      border: 0;
-      border-radius: 6px;
-      background: var(--accent);
-      color: white;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      padding: 13px 18px;
-    }
-
-    .button:disabled { opacity: .55; cursor: not-allowed; }
-
-    .secondary {
-      display: inline-block;
-      margin-top: 12px;
-      color: var(--ink);
-      font-size: 14px;
-    }
-
-    .message {
-      display: none;
-      padding: 14px;
-      border-radius: 7px;
-      margin-bottom: 16px;
-      overflow-wrap: anywhere;
-    }
-
-    .message.error { display: block; background: #fff0f0; color: #8b1717; }
-    .message.success { display: block; background: #edf8ef; color: #155b26; }
-
-    .smallprint { font-size: 12px; color: var(--muted); margin-top: 12px; }
-    .required { color: #a11; }
-    footer { text-align: center; color: var(--muted); font-size: 12px; padding-top: 12px; }
-
-    @media (max-width: 560px) {
-      body { padding: 14px 10px 32px; }
-      .section { padding: 16px; }
-      .grid { grid-template-columns: 1fr; gap: 0; }
-    }
+    .total { display: flex; justify-content: space-between; gap: 12px; font-weight: 700; font-size: 18px; padding-top: 14px; }
+    button { width: 100%; padding: 14px; border: 0; border-radius: 6px; background: #111; color: white; font-size: 15px; font-weight: 700; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .message { display: none; padding: 13px; border-radius: 7px; margin-bottom: 15px; overflow-wrap: anywhere; }
+    .error { display: block; background: #fff0f0; color: #8b1717; }
+    .success { display: block; background: #edf8ef; color: #155b26; }
+    a { color: #171717; }
+    footer { text-align: center; font-size: 12px; color: #666; padding-top: 12px; }
+    @media(max-width:560px) { .grid { grid-template-columns: 1fr; gap: 0; } body { padding: 14px 10px 30px; } .section { padding: 15px; } }
   </style>
 </head>
 <body>
-  <main class="container">
-    <header>
-      <div class="eyebrow">Stoich Provisions</div>
-      <h1>Order Request</h1>
-      <p>Submit your order and our team will contact you to confirm the details.</p>
-    </header>
+<main>
+  <header>
+    <div class="eyebrow">Stoich Provisions</div>
+    <h1>Order Request</h1>
+    <p>Submit your order and our team will contact you to confirm the details.</p>
+  </header>
 
-    <div class="notice">
-      <strong>This is not a payment checkout.</strong>
-      No payment is collected on this page. Your order is a request until our team confirms product availability, the final amount, and payment arrangements. Saipan delivery costs will be quoted after submission.
+  <div class="notice">
+    <strong>This is not a payment checkout.</strong>
+    No payment is collected on this page. Your order is a request until our team confirms product availability, the final amount, and payment arrangements. Saipan delivery costs will be quoted after submission.
+  </div>
+
+  <div id="message" class="message" role="status" aria-live="polite"></div>
+
+  <section class="section">
+    <h2>1. Your cart</h2>
+    <div id="cart-status" class="muted">Waiting for your Shopify cart…</div>
+    <div id="cart-items"></div>
+    <div id="cart-total" class="total" hidden>
+      <span>Estimated merchandise total</span>
+      <span id="total-value">$0.00</span>
     </div>
+    <p class="smallprint">Delivery fees are not included. Product availability and prices must be confirmed by our team.</p>
+    <a href="https://aqlx.shop/cart">Return to your Shopify cart</a>
+  </section>
 
-    <div id="message" class="message" role="status" aria-live="polite"></div>
-
+  <form id="order-form">
     <section class="section">
-      <h2>1. Your cart</h2>
-      <div id="cart-status" class="muted">Loading your Shopify cart…</div>
-      <div id="cart-items"></div>
-      <div id="cart-total" class="total" hidden>
-        <span>Estimated merchandise total</span>
-        <span id="total-value">$0.00</span>
+      <h2>2. Your information</h2>
+      <div class="grid">
+        <div class="field">
+          <label for="firstName">First name *</label>
+          <input id="firstName" name="firstName" autocomplete="given-name" required>
+        </div>
+        <div class="field">
+          <label for="lastName">Last name *</label>
+          <input id="lastName" name="lastName" autocomplete="family-name" required>
+        </div>
       </div>
-      <p class="smallprint">Product prices and availability must be confirmed by our team. Delivery fees, if applicable, are not included here.</p>
-      <a class="secondary" href="/cart">Return to your Shopify cart</a>
+      <div class="grid">
+        <div class="field">
+          <label for="email">Email address *</label>
+          <input id="email" name="email" type="email" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="phone">Phone number *</label>
+          <input id="phone" name="phone" type="tel" autocomplete="tel" required>
+        </div>
+      </div>
+      <div class="field">
+        <label>Preferred contact method *</label>
+        <div class="choices">
+          <div class="choice"><input type="radio" id="contact-wa" name="contactMethod" value="WhatsApp" required><label for="contact-wa"><strong>WhatsApp</strong><span class="muted">Message me on WhatsApp.</span></label></div>
+          <div class="choice"><input type="radio" id="contact-sms" name="contactMethod" value="SMS"><label for="contact-sms"><strong>SMS / Text</strong></label></div>
+          <div class="choice"><input type="radio" id="contact-call" name="contactMethod" value="Phone call"><label for="contact-call"><strong>Phone call</strong></label></div>
+          <div class="choice"><input type="radio" id="contact-email" name="contactMethod" value="Email"><label for="contact-email"><strong>Email</strong></label></div>
+        </div>
+      </div>
     </section>
 
-    <form id="order-form">
-      <section class="section">
-        <h2>2. Your information</h2>
-        <div class="grid">
-          <div class="field">
-            <label for="firstName">First name <span class="required">*</span></label>
-            <input id="firstName" name="firstName" autocomplete="given-name" required>
-          </div>
-          <div class="field">
-            <label for="lastName">Last name <span class="required">*</span></label>
-            <input id="lastName" name="lastName" autocomplete="family-name" required>
-          </div>
-        </div>
+    <section class="section">
+      <h2>3. Fulfillment</h2>
+      <div class="choices">
+        <div class="choice"><input type="radio" id="pickup" name="fulfillment" value="Guam store pickup" required><label for="pickup"><strong>Guam store pickup</strong><span class="muted">We'll confirm pickup arrangements.</span></label></div>
+        <div class="choice"><input type="radio" id="delivery" name="fulfillment" value="Guam local delivery"><label for="delivery"><strong>Guam local delivery</strong><span class="muted">We'll confirm availability and any delivery fee.</span></label></div>
+        <div class="choice"><input type="radio" id="saipan" name="fulfillment" value="Saipan delivery"><label for="saipan"><strong>Saipan delivery</strong><span class="muted">Shipping costs will be quoted after submission.</span></label></div>
+      </div>
+      <div class="field" style="margin-top:16px">
+        <label for="address">Delivery address / location</label>
+        <textarea id="address" name="address" placeholder="Enter your address or village if delivery applies."></textarea>
+      </div>
+      <div class="field">
+        <label for="notes">Additional notes</label>
+        <textarea id="notes" name="notes" placeholder="Product questions or special instructions"></textarea>
+      </div>
+    </section>
 
-        <div class="grid">
-          <div class="field">
-            <label for="email">Email address <span class="required">*</span></label>
-            <input id="email" name="email" type="email" autocomplete="email" required>
-          </div>
-          <div class="field">
-            <label for="phone">Phone number <span class="required">*</span></label>
-            <input id="phone" name="phone" type="tel" autocomplete="tel" required>
-          </div>
-        </div>
+    <section class="section">
+      <h2>4. Submit your request</h2>
+      <div class="choice">
+        <input type="checkbox" id="acknowledge" required>
+        <label for="acknowledge">I understand this is an order request, not a confirmed order. The team will contact me to confirm availability, final pricing, fulfillment, and payment arrangements.</label>
+      </div>
+      <button id="submit-button" type="submit" style="margin-top:18px">Submit Order Request</button>
+      <p class="smallprint">No payment details are collected here.</p>
+    </section>
+  </form>
 
-        <div class="field">
-          <label>Preferred contact method <span class="required">*</span></label>
-          <div class="choice-list">
-            <label class="choice"><input type="radio" name="contactMethod" value="WhatsApp" required><span><strong>WhatsApp</strong><span class="muted">Contact me through WhatsApp.</span></span></label>
-            <label class="choice"><input type="radio" name="contactMethod" value="SMS"><span><strong>SMS / Text</strong><span class="muted">Send me a text message.</span></span></label>
-            <label class="choice"><input type="radio" name="contactMethod" value="Phone call"><span><strong>Phone call</strong><span class="muted">Call me to confirm the order.</span></span></label>
-            <label class="choice"><input type="radio" name="contactMethod" value="Email"><span><strong>Email</strong><span class="muted">Contact me by email.</span></span></label>
-          </div>
-        </div>
-      </section>
+  <footer>Stoich Provisions · Guam</footer>
+</main>
 
-      <section class="section">
-        <h2>3. Fulfillment</h2>
-        <div class="choice-list">
-          <label class="choice">
-            <input type="radio" name="fulfillment" value="Guam store pickup" required>
-            <span><strong>Guam store pickup</strong><span class="muted">We'll confirm pickup arrangements.</span></span>
-          </label>
-          <label class="choice">
-            <input type="radio" name="fulfillment" value="Guam local delivery">
-            <span><strong>Guam local delivery</strong><span class="muted">We'll confirm delivery availability and any applicable fee.</span></span>
-          </label>
-          <label class="choice">
-            <input type="radio" name="fulfillment" value="Saipan delivery">
-            <span><strong>Saipan delivery</strong><span class="muted">Shipping cost and arrangements will be quoted after your request.</span></span>
-          </label>
-        </div>
+<script>
+(function () {
+  "use strict";
 
-        <div class="field" style="margin-top:16px">
-          <label for="address">Delivery address / location</label>
-          <textarea id="address" name="address" placeholder="Enter your delivery address, village, or Saipan location if applicable."></textarea>
-        </div>
+  const EXPECTED_PARENT_ORIGIN = "https://aqlx.shop";
+  let receivedCart = null;
 
-        <div class="field">
-          <label for="notes">Additional notes</label>
-          <textarea id="notes" name="notes" placeholder="Any product questions or special instructions?"></textarea>
-        </div>
-      </section>
+  const statusEl = document.getElementById("cart-status");
+  const itemsEl = document.getElementById("cart-items");
+  const totalEl = document.getElementById("cart-total");
+  const totalValueEl = document.getElementById("total-value");
+  const messageEl = document.getElementById("message");
+  const submitButton = document.getElementById("submit-button");
 
-      <section class="section">
-        <h2>4. Submit your request</h2>
-        <label class="choice">
-          <input type="checkbox" id="acknowledge" required>
-          <span>I understand this is an order request, not a confirmed order. Stoich Provisions will contact me to confirm availability, the final total, fulfillment, and payment arrangements.</span>
-        </label>
-        <button class="button" id="submit-button" type="submit" style="margin-top:18px">Submit Order Request</button>
-        <p class="smallprint">Please do not submit payment details on this form. Our team will contact you with the next steps.</p>
-      </section>
-    </form>
-
-    <footer>Stoich Provisions · Guam</footer>
-  </main>
-
-  <script>
-    /*
-      FRONT-END ONLY:
-      This page loads the Shopify cart and displays it. Order submission
-      requires a matching, secured Cloudflare Worker API implementation.
-    */
-    const WORKER_URL = "https://stoich-provisions-orders.jpcalma09.workers.dev";
-    const money = cents => new Intl.NumberFormat("en-US", {
+  function money(cents, currency) {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD"
-    }).format(cents / 100);
+      currency: currency || "USD"
+    }).format((Number(cents) || 0) / 100);
+  }
 
-    const message = document.getElementById("message");
-    const cartStatus = document.getElementById("cart-status");
-    const cartItems = document.getElementById("cart-items");
-    const cartTotal = document.getElementById("cart-total");
-    const totalValue = document.getElementById("total-value");
-    const submitButton = document.getElementById("submit-button");
+  function showMessage(text, type) {
+    messageEl.textContent = text;
+    messageEl.className = "message " + type;
+  }
 
-    let shopifyCart = null;
+  function displayCart(cart) {
+    if (!cart || !Array.isArray(cart.items)) return false;
 
-    function showMessage(text, type) {
-      message.textContent = text;
-      message.className = "message " + type;
-      message.scrollIntoView({ behavior: "smooth", block: "center" });
+    receivedCart = cart;
+    itemsEl.replaceChildren();
+
+    if (cart.items.length === 0) {
+      statusEl.textContent = "Your Shopify cart is empty. Add products before continuing.";
+      totalEl.hidden = true;
+      submitButton.disabled = true;
+      return true;
     }
 
-    function getShopifyRoot() {
-      // The form is intended to be embedded in a page on aqlx.shop.
-      return window.location.origin;
-    }
+    for (const item of cart.items) {
+      const row = document.createElement("div");
+      row.className = "cart-item";
 
-    async function loadCart() {
-      cartStatus.textContent = "Loading your Shopify cart…";
+      const left = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = item.product_title || item.title || "Product";
 
-      try {
-        const response = await fetch(getShopifyRoot() + "/cart.js", {
-          credentials: "same-origin",
-          headers: { "Accept": "application/json" }
-        });
+      const detail = document.createElement("div");
+      detail.className = "muted";
+      detail.textContent = "Quantity: " + String(item.quantity || 0);
 
-        if (!response.ok) throw new Error("Could not read Shopify cart.");
+      left.append(title, detail);
 
-        shopifyCart = await response.json();
-
-        if (!shopifyCart.items || shopifyCart.items.length === 0) {
-          cartStatus.textContent = "Your Shopify cart is empty. Add products before submitting an order request.";
-          submitButton.disabled = true;
-          return;
-        }
-
-        cartStatus.textContent = "";
-        cartItems.replaceChildren();
-
-        shopifyCart.items.forEach(item => {
-          const row = document.createElement("div");
-          row.className = "cart-item";
-
-          const left = document.createElement("div");
-          const name = document.createElement("div");
-          name.className = "cart-item-name";
-          name.textContent = item.product_title || item.title || "Product";
-
-          const detail = document.createElement("div");
-          detail.className = "cart-item-detail";
-          detail.textContent = "Quantity: " + item.quantity;
-
-          left.append(name, detail);
-
-          const price = document.createElement("div");
-          price.style.fontWeight = "700";
-          price.textContent = money(item.final_line_price ?? item.line_price ?? 0);
-
-          row.append(left, price);
-          cartItems.append(row);
-        });
-
-        totalValue.textContent = money(shopifyCart.total_price || 0);
-        cartTotal.hidden = false;
-        submitButton.disabled = false;
-      } catch (error) {
-        cartStatus.textContent = "We couldn't load your cart from this page.";
-        showMessage(
-          "Please open your Shopify cart and try again. If this page is inside an embedded frame, the store must pass the cart securely to the order form.",
-          "error"
-        );
-        submitButton.disabled = true;
-      }
-    }
-
-    document.getElementById("order-form").addEventListener("submit", async event => {
-      event.preventDefault();
-
-      if (!shopifyCart || !shopifyCart.items || shopifyCart.items.length === 0) {
-        showMessage("Your cart is empty or hasn't loaded. Please return to your Shopify cart and try again.", "error");
-        return;
-      }
-
-      /*
-        Deliberately do not submit orders yet. A secure backend endpoint
-        must verify Shopify variant IDs, prices, quantities, and cart contents,
-        then save the request in D1 and trigger notifications. Sending customer
-        information directly to an unverified endpoint would be unsafe.
-      */
-      showMessage(
-        "Your form is ready, but order submission has not been activated yet. The store administrator must connect the secure order-submission endpoint before customer requests can be accepted.",
-        "error"
+      const price = document.createElement("strong");
+      price.textContent = money(
+        item.final_line_price ?? item.line_price ?? 0,
+        cart.currency || "USD"
       );
-    });
 
-    loadCart();
-  </script>
+      row.append(left, price);
+      itemsEl.append(row);
+    }
+
+    statusEl.textContent = "Cart received from Shopify.";
+    totalValueEl.textContent = money(cart.total_price, cart.currency || "USD");
+    totalEl.hidden = false;
+    submitButton.disabled = false;
+    return true;
+  }
+
+  window.addEventListener("message", function (event) {
+    if (event.origin !== EXPECTED_PARENT_ORIGIN) return;
+    if (event.source !== window.parent) return;
+    if (!event.data || event.data.type !== "STOICH_SHOPIFY_CART") return;
+
+    if (!displayCart(event.data.cart)) {
+      statusEl.textContent = "Shopify sent cart data in an unexpected format.";
+      submitButton.disabled = true;
+    }
+  });
+
+  document.getElementById("order-form").addEventListener("submit", function (event) {
+    event.preventDefault();
+
+    if (!receivedCart || !Array.isArray(receivedCart.items) || receivedCart.items.length === 0) {
+      showMessage("Your Shopify cart has not loaded. Return to your cart and try again.", "error");
+      return;
+    }
+
+    /*
+      Submission is intentionally disabled until the Cloudflare Worker
+      has a secure endpoint that validates Shopify variant IDs and prices,
+      saves the order request to D1, and handles notification delivery.
+    */
+    showMessage(
+      "Your cart is loaded, but order submission is not activated yet. The store administrator must connect and test the secure order-submission service before requests can be accepted.",
+      "error"
+    );
+  });
+
+  submitButton.disabled = true;
+  statusEl.textContent = "Waiting for your Shopify cart…";
+})();
+</script>
 </body>
 </html>
