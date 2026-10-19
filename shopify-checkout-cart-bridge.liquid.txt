@@ -1,0 +1,21 @@
+<!-- Add to the Shopify page template that contains the checkout iframe. Keep the iframe src pointing to your Worker checkout page. -->
+<iframe id="stoich-order-frame" src="https://stoich-provisions-orders.jpcalma09.workers.dev/checkout" title="Stoich Provisions order request" style="width:100%;min-height:1100px;border:0"></iframe>
+<script>
+(function(){
+  const frame=document.getElementById('stoich-order-frame');
+  async function sendCart(){
+    try{
+      const response=await fetch('/cart.js',{credentials:'same-origin',headers:{'Accept':'application/json'}});
+      if(!response.ok) throw new Error('Could not load Shopify cart');
+      const cart=await response.json();
+      frame.contentWindow.postMessage({type:'STOICH_SHOPIFY_CART',cart},'https://stoich-provisions-orders.jpcalma09.workers.dev');
+    }catch(error){console.error('Stoich cart transfer failed:',error);}
+  }
+  window.addEventListener('message',function(event){
+    if(event.origin!=='https://stoich-provisions-orders.jpcalma09.workers.dev'||event.source!==frame.contentWindow)return;
+    if(event.data&&event.data.type==='STOICH_REQUEST_SHOPIFY_CART')sendCart();
+  });
+  frame.addEventListener('load',sendCart);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)sendCart();});
+})();
+</script>
