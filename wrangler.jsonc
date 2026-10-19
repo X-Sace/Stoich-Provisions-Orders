@@ -10,7 +10,8 @@
     "database_id": "17a96f43-372f-43ad-882e-5bb3e31df7a8"
   }],
   "vars": {
-    "STORE_DOMAIN": "aqlx.shop",
-    "INITIAL_NOTIFICATION_EMAIL": "jpcalma09@gmail.com"
+    "GMAIL_SENDER": "aqlxdetail@gmail.com",
+    "INITIAL_NOTIFICATION_EMAIL": "aqlxdetail@gmail.com",
+    "STORE_DOMAIN": "aqlx.shop"
   }
 }
