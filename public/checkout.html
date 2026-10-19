@@ -1,159 +1,229 @@
 
-<script>
-(function () {
-  const API = 'https://stoich-provisions-orders.jpcalma09.workers.dev';
-  const SHOP = 'https://aqlx.shop';
-  let cart = null;
-  let retryTimer = null;
-  const $ = id => document.getElementById(id);
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stoich Provisions — Order Request</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;color:#171717;margin:0;padding:22px;background:#fff}
+main{max-width:780px;margin:auto}
+h1{font-size:28px;margin:0 0 8px}
+p{line-height:1.5}
+.muted{color:#666;font-size:14px}
+section{border:1px solid #ddd;border-radius:10px;padding:18px;margin:18px 0}
+label{display:block;font-weight:600;margin:13px 0 6px}
+input,select,textarea{width:100%;padding:12px;border:1px solid #bbb;border-radius:6px;font:inherit}
+button{background:#111;color:white;border:0;border-radius:6px;padding:14px 18px;font:inherit;font-weight:700;cursor:pointer;width:100%}
+button:disabled{opacity:.5}
+.item{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:10px 0}
+.item:last-child{border-bottom:0}
+.error{color:#a00}
+.success{background:#eff9ef;padding:14px;border-radius:8px}
+</style>
+</head>
+<body>
+<main>
+<h1>Stoich Provisions</h1>
+<p class="muted">Submit an order request. This does not collect payment or confirm stock. Our team will contact you to confirm availability, delivery/shipping, and payment arrangements.</p>
 
-  function money(cents) {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: (cart && cart.currency) || 'USD'
-    }).format((Number(cents) || 0) / 100);
+<section>
+<h2>Your cart</h2>
+<div id="cart-items">Waiting for your Shopify cart…</div>
+<p><strong>Subtotal: <span id="cart-total">$0.00</span></strong></p>
+<p id="cart-warning" class="muted">Connecting to your Shopify cart…</p>
+</section>
+
+<form id="order-form">
+<section>
+<h2>Contact information</h2>
+<label for="name">Full name *</label>
+<input id="name" required autocomplete="name">
+<label for="email">Email *</label>
+<input id="email" type="email" required autocomplete="email">
+<label for="phone">Phone number *</label>
+<input id="phone" required autocomplete="tel">
+<label for="contact">Preferred contact method *</label>
+<select id="contact" required>
+<option value="">Choose one</option>
+<option>WhatsApp</option>
+<option>Text message</option>
+<option>Phone call</option>
+<option>Email</option>
+</select>
+</section>
+
+<section>
+<h2>Fulfillment</h2>
+<label for="fulfillment">How would you like to receive your order? *</label>
+<select id="fulfillment" required>
+<option value="">Choose one</option>
+<option>Guam store pickup</option>
+<option>Guam local delivery</option>
+<option>Saipan delivery</option>
+</select>
+<label for="address">Delivery address or island (required for delivery)</label>
+<input id="address" placeholder="Enter delivery address">
+<label for="notes">Order notes (optional)</label>
+<textarea id="notes" rows="3" placeholder="Anything we should know?"></textarea>
+</section>
+
+<p class="muted">Saipan shipping costs will be quoted after you submit your request. No payment is taken on this page.</p>
+<button id="submit" type="submit" disabled>Submit Order Request</button>
+<p id="message" role="status"></p>
+</form>
+</main>
+
+<script>
+(function(){
+  const API='https://stoich-provisions-orders.jpcalma09.workers.dev';
+  const SHOP='https://aqlx.shop';
+  let cart=null;
+  const $=id=>document.getElementById(id);
+  let retryTimer=null;
+
+  function money(cents){
+    return new Intl.NumberFormat('en-US',{
+      style:'currency',
+      currency:(cart&&cart.currency)||'USD'
+    }).format((Number(cents)||0)/100);
   }
 
-  function requestCart() {
-    if (cart && Array.isArray(cart.items) && cart.items.length) return;
+  function requestCart(){
+    if(cart&&Array.isArray(cart.items)&&cart.items.length)return;
     window.parent.postMessage(
-      { type: 'STOICH_REQUEST_SHOPIFY_CART' },
+      {type:'STOICH_REQUEST_SHOPIFY_CART'},
       SHOP
     );
   }
 
-  function renderCart(c) {
-    if (!c || !Array.isArray(c.items)) return;
-
-    cart = c;
-    const items = c.items;
-    const container = $('cart-items');
+  function renderCart(c){
+    if(!c||!Array.isArray(c.items))return;
+    cart=c;
+    const container=$('cart-items');
     container.replaceChildren();
 
-    if (!items.length) {
-      container.textContent = 'Your Shopify cart is empty. Add products before submitting.';
-      $('cart-total').textContent = money(0);
-      $('cart-warning').textContent = 'Your cart is empty.';
-      $('submit').disabled = true;
+    if(!c.items.length){
+      container.textContent='Your Shopify cart is empty. Add products before submitting.';
+      $('cart-total').textContent=money(0);
+      $('cart-warning').textContent='Your cart is empty.';
+      $('submit').disabled=true;
       return;
     }
 
-    for (const item of items) {
-      const row = document.createElement('div');
-      row.className = 'item';
+    for(const item of c.items){
+      const row=document.createElement('div');
+      row.className='item';
 
-      const title = document.createElement('span');
-      title.textContent =
-        (item.product_title || item.title || 'Product') +
-        (item.variant_title && item.variant_title !== 'Default Title'
-          ? ' — ' + item.variant_title : '') +
-        ' × ' + item.quantity;
+      const title=document.createElement('span');
+      title.textContent=
+        (item.product_title||item.title||'Product')+
+        (item.variant_title&&item.variant_title!=='Default Title'
+          ?' — '+item.variant_title:'')+
+        ' × '+item.quantity;
 
-      const price = document.createElement('strong');
-      price.textContent = money(item.final_line_price ?? item.line_price ?? 0);
-
-      row.append(title, price);
+      const price=document.createElement('strong');
+      price.textContent=money(item.final_line_price??item.line_price??0);
+      row.append(title,price);
       container.appendChild(row);
     }
 
-    $('cart-total').textContent = money(c.total_price || 0);
-    $('cart-warning').textContent = 'Cart received from Shopify.';
-    $('submit').disabled = false;
-
-    if (retryTimer) clearInterval(retryTimer);
+    $('cart-total').textContent=money(c.total_price||0);
+    $('cart-warning').textContent='Cart received from Shopify.';
+    $('submit').disabled=false;
+    if(retryTimer)clearInterval(retryTimer);
   }
 
-  window.addEventListener('message', event => {
-    if (event.origin !== SHOP || event.source !== window.parent) return;
-    if (event.data?.type === 'STOICH_SHOPIFY_CART') {
+  window.addEventListener('message',event=>{
+    if(event.origin!==SHOP||event.source!==window.parent)return;
+    if(event.data&&event.data.type==='STOICH_SHOPIFY_CART'){
       renderCart(event.data.cart);
     }
   });
 
   requestCart();
-  retryTimer = setInterval(requestCart, 1500);
+  retryTimer=setInterval(requestCart,1500);
 
-  setTimeout(() => {
-    if (!cart || !Array.isArray(cart.items) || !cart.items.length) {
-      $('cart-warning').textContent =
-        'Still waiting for Shopify. Check the cart connection or refresh this page.';
+  setTimeout(()=>{
+    if(!cart||!Array.isArray(cart.items)||!cart.items.length){
+      $('cart-warning').textContent=
+        'Still waiting for Shopify. Check the Shopify page bridge and refresh.';
     }
-  }, 5000);
+  },5000);
 
-  $('fulfillment').addEventListener('change', () => {
-    const method = $('fulfillment').value;
-    $('address').required = !!method && method !== 'Guam store pickup';
-    $('address').placeholder = method === 'Saipan delivery'
-      ? 'Enter Saipan delivery details'
-      : 'Enter delivery address';
+  $('fulfillment').addEventListener('change',()=>{
+    const method=$('fulfillment').value;
+    const needed=!!method&&method!=='Guam store pickup';
+    $('address').required=needed;
+    $('address').placeholder=method==='Saipan delivery'
+      ?'Enter Saipan delivery details':'Enter delivery address';
   });
 
-  $('order-form').addEventListener('submit', async event => {
+  $('order-form').addEventListener('submit',async event=>{
     event.preventDefault();
-    $('message').className = '';
-    $('message').textContent = '';
+    $('message').className='';
+    $('message').textContent='';
 
-    if (!cart || !Array.isArray(cart.items) || !cart.items.length) {
-      $('message').className = 'error';
-      $('message').textContent = 'Your cart has not loaded. Please wait or refresh this page.';
+    if(!cart||!Array.isArray(cart.items)||!cart.items.length){
+      $('message').className='error';
+      $('message').textContent='Your cart has not loaded. Please wait or refresh this page.';
       requestCart();
       return;
     }
 
-    const items = cart.items.map(item => ({
-      product_id: String(item.product_id || ''),
-      variant_id: String(item.variant_id || item.id || ''),
-      title: String(item.product_title || item.title || 'Product'),
-      variant: String(
-        item.variant_title && item.variant_title !== 'Default Title'
-          ? item.variant_title : ''
-      ),
-      sku: String(item.sku || ''),
-      quantity: Number(item.quantity),
-      unit_price_cents: Number(item.final_price ?? item.price ?? 0)
+    const items=cart.items.map(item=>({
+      product_id:String(item.product_id||''),
+      variant_id:String(item.variant_id||item.id||''),
+      title:String(item.product_title||item.title||'Product'),
+      variant:String(item.variant_title&&item.variant_title!=='Default Title'
+        ?item.variant_title:''),
+      sku:String(item.sku||''),
+      quantity:Number(item.quantity),
+      unit_price_cents:Number(item.final_price??item.price??0)
     }));
 
-    const payload = {
-      customer: {
-        name: $('name').value,
-        email: $('email').value,
-        phone: $('phone').value,
-        contact_preference: $('contact').value
+    const payload={
+      customer:{
+        name:$('name').value,
+        email:$('email').value,
+        phone:$('phone').value,
+        contact_preference:$('contact').value
       },
-      fulfillment_method: $('fulfillment').value,
-      address: $('address').value,
-      customer_notes: $('notes').value,
+      fulfillment_method:$('fulfillment').value,
+      address:$('address').value,
+      customer_notes:$('notes').value,
       items,
-      currency: cart.currency || 'USD',
-      cart_id: String(cart.token || cart.note || '')
+      currency:cart.currency||'USD',
+      cart_id:String(cart.token||cart.note||'')
     };
 
-    $('submit').disabled = true;
-    $('submit').textContent = 'Submitting…';
+    $('submit').disabled=true;
+    $('submit').textContent='Submitting…';
 
-    try {
-      const response = await fetch(API + '/api/orders', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload)
+    try{
+      const response=await fetch(API+'/api/orders',{
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify(payload)
       });
+      const data=await response.json();
+      if(!response.ok)throw new Error(data.error||'Could not submit your request.');
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Could not submit your request.');
-
-      $('message').className = 'success';
-      $('message').textContent =
-        'Request received! Your request number is #' +
-        data.order_number + '. ' + (data.message || '');
-
+      $('message').className='success';
+      $('message').textContent=
+        'Request received! Your request number is #'+data.order_number+'. '+
+        (data.message||'');
       $('order-form').reset();
-    } catch (error) {
-      $('message').className = 'error';
-      $('message').textContent = error.message || 'Something went wrong. Please try again.';
-    } finally {
-      $('submit').disabled = false;
-      $('submit').textContent = 'Submit Order Request';
+    }catch(error){
+      $('message').className='error';
+      $('message').textContent=error.message||'Something went wrong. Please try again.';
+    }finally{
+      $('submit').disabled=!(cart&&Array.isArray(cart.items)&&cart.items.length);
+      $('submit').textContent='Submit Order Request';
     }
   });
 })();
 </script>
+</body>
+</html>
