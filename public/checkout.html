@@ -1,1 +1,54 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Stoich Provisions — Order Request</title><style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#171717;margin:0;padding:22px;background:#fff}main{max-width:780px;margin:auto}h1{font-size:28px;margin:0 0 8px}p{line-height:1.5}.muted{color:#666;font-size:14px}section{border:1px solid #ddd;border-radius:10px;padding:18px;margin:18px 0}label{display:block;font-weight:600;margin:13px 0 6px}input,select,textarea{width:100%;padding:12px;border:1px solid #bbb;border-radius:6px;font:inherit}button{background:#111;color:white;border:0;border-radius:6px;padding:14px 18px;font:inherit;font-weight:700;cursor:pointer;width:100%}button:disabled{opacity:.5}.item{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:10px 0}.item:last-child{border-bottom:0}.error{color:#a00}.success{background:#eff9ef;padding:14px;border-radius:8px}</style></head><body><main><h1>Stoich Provisions</h1><p class="muted">Submit an order request. This does not collect payment or confirm stock. Our team will contact you to confirm availability, delivery/shipping, and payment arrangements.</p><section><h2>Your cart</h2><div id="cart-items">Waiting for your Shopify cart…</div><p><strong>Subtotal: <span id="cart-total">$0.00</span></strong></p><p id="cart-warning" class="muted">Loading your Shopify cart automatically…</p></section><form id="order-form"><section><h2>Contact information</h2><label for="name">Full name *</label><input id="name" required autocomplete="name"><label for="email">Email *</label><input id="email" type="email" required autocomplete="email"><label for="phone">Phone number *</label><input id="phone" required autocomplete="tel"><label for="contact">Preferred contact method *</label><select id="contact" required><option value="">Choose one</option><option>WhatsApp</option><option>Text message</option><option>Phone call</option><option>Email</option></select></section><section><h2>Fulfillment</h2><label for="fulfillment">How would you like to receive your order? *</label><select id="fulfillment" required><option value="">Choose one</option><option>Guam store pickup</option><option>Guam local delivery</option><option>Saipan delivery</option></select><label for="address">Delivery address or island (required for delivery)</label><input id="address" placeholder="Enter address or Saipan"><label for="notes">Order notes (optional)</label><textarea id="notes" rows="3" placeholder="Anything we should know?"></textarea></section><p class="muted">Saipan shipping costs will be quoted after you submit your request. No payment is taken on this page.</p><button id="submit" type="submit" disabled>Submit Order Request</button><p id="message" role="status"></p></form></main><script>(function(){const API='https://stoich-provisions-orders.jpcalma09.workers.dev';let cart=null;const $=id=>document.getElementById(id);const money=c=>new Intl.NumberFormat('en-US',{style:'currency',currency:(cart&&cart.currency)||'USD'}).format((Number(c)||0)/100);function renderCart(c){cart=c;const items=Array.isArray(c.items)?c.items:[];$('cart-items').innerHTML='';if(!items.length){$('cart-items').textContent='Your cart is empty. Add products in the Shopify store first.';$('submit').disabled=true;return}$('submit').disabled=false;for(const item of items){const row=document.createElement('div');row.className='item';const title=document.createElement('span');title.textContent=(item.product_title||item.title||'Product')+(item.variant_title&&item.variant_title!=='Default Title'?' — '+item.variant_title:'')+' × '+item.quantity;const price=document.createElement('strong');price.textContent=money(item.final_line_price??item.line_price??0);row.append(title,price);$('cart-items').appendChild(row)}$('cart-total').textContent=money(c.total_price||0);$('cart-warning').textContent='Cart received from Shopify.'}window.addEventListener('message',e=>{if(e.origin!=='https://aqlx.shop'||e.source!==window.parent)return;if(e.data&&e.data.type==='STOICH_SHOPIFY_CART')renderCart(e.data.cart||{})});function requestCart(){try{window.parent.postMessage({type:'STOICH_REQUEST_SHOPIFY_CART'},'https://aqlx.shop')}catch(e){}}requestCart();setTimeout(requestCart,500);setTimeout(()=>{if(!cart){$('cart-warning').textContent='Cart not received yet. Retry loading, or return to shopping and add items.';const b=document.createElement('button');b.type='button';b.textContent='Retry loading cart';b.style.marginTop='8px';b.onclick=()=>{ $('cart-warning').textContent='Trying to load your Shopify cart…';requestCart();setTimeout(()=>{if(!cart)$('cart-warning').textContent='Still unable to load the cart. Please refresh this page or return to shopping.',2500)};};$('cart-warning').appendChild(b)}},2500);$('fulfillment').addEventListener('change',()=>{const needed=$('fulfillment').value!=='Guam store pickup';$('address').required=needed;$('address').placeholder=$('fulfillment').value==='Saipan delivery'?'Enter Saipan delivery details':'Enter delivery address'});$('order-form').addEventListener('submit',async e=>{e.preventDefault();$('message').className='';$('message').textContent='';if(!cart||!Array.isArray(cart.items)||!cart.items.length){$('message').className='error';$('message').textContent='Your Shopify cart was not received. Return to your cart and open this form again.';return}const items=cart.items.map(i=>({product_id:String(i.product_id||''),variant_id:String(i.variant_id||i.id||''),title:String(i.product_title||i.title||'Product'),variant:String(i.variant_title&&i.variant_title!=='Default Title'?i.variant_title:''),sku:String(i.sku||''),quantity:Number(i.quantity),unit_price_cents:Number(i.final_price??i.price??0)}));const payload={customer:{name:$('name').value,email:$('email').value,phone:$('phone').value,contact_preference:$('contact').value},fulfillment_method:$('fulfillment').value,address:$('address').value,customer_notes:$('notes').value,items,currency:cart.currency||'USD',cart_id:String(cart.token||cart.note||'')};$('submit').disabled=true;$('submit').textContent='Submitting…';try{const r=await fetch(API+'/api/orders',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});const data=await r.json();if(!r.ok)throw new Error(data.error||'Could not submit your request.');$('message').className='success';$('message').textContent='Request received! Your request number is #'+data.order_number+'. '+data.message;$('order-form').reset()}catch(err){$('message').className='error';$('message').textContent=err.message||'Something went wrong. Please try again.'}finally{$('submit').disabled=false;$('submit').textContent='Submit Order Request'}})})();</script></body></html>
+
+<script>
+(function () {
+  const WORKER = 'https://stoich-provisions-orders.jpcalma09.workers.dev';
+
+  function connect() {
+    const frame = document.querySelector(
+      'iframe[src*="stoich-provisions-orders.jpcalma09.workers.dev/checkout"]'
+    );
+
+    if (!frame || frame.dataset.stoichBridge === 'connected') return;
+    frame.dataset.stoichBridge = 'connected';
+
+    async function sendCart() {
+      try {
+        const response = await fetch('/cart.js', {
+          credentials: 'same-origin',
+          headers: { Accept: 'application/json' }
+        });
+
+        if (!response.ok) throw new Error('Could not load Shopify cart');
+
+        const cart = await response.json();
+
+        frame.contentWindow.postMessage(
+          { type: 'STOICH_SHOPIFY_CART', cart },
+          WORKER
+        );
+      } catch (error) {
+        console.error('Stoich cart transfer failed:', error);
+      }
+    }
+
+    window.addEventListener('message', event => {
+      if (
+        event.origin === WORKER &&
+        event.source === frame.contentWindow &&
+        event.data?.type === 'STOICH_REQUEST_SHOPIFY_CART'
+      ) {
+        sendCart();
+      }
+    });
+
+    frame.addEventListener('load', sendCart);
+    sendCart();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', connect);
+  } else {
+    connect();
+  }
+})();
+</script>
