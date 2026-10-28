@@ -25,3 +25,8 @@ CREATE TABLE IF NOT EXISTS notification_emails (
 );
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE TABLE IF NOT EXISTS pickup_box_codes (
+  order_id TEXT PRIMARY KEY,
+  code TEXT NOT NULL,
+  loaded_at TEXT NOT NULL
+);
