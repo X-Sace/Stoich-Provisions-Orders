@@ -1,19 +1,29 @@
-<!-- Add to the Shopify page template that contains the checkout iframe. Keep the iframe src pointing to your Worker checkout page. -->
-<iframe id="stoich-order-frame" src="https://stoich-provisions-orders.jpcalma09.workers.dev/checkout" title="Stoich Provisions order request" style="width:100%;min-height:1100px;border:0"></iframe>
+<!-- Shopify /pages/checkout block: the order-request iframe + cart bridge.
+     Sends the Shopify cart into the Worker checkout, and (new) lets the checkout resize the iframe
+     so there is no scroll-inside-a-scroll on phones. Keep only ONE copy of this block on the page. -->
+<iframe id="stoich-order-form" src="https://stoich-provisions-orders.jpcalma09.workers.dev/checkout.html" title="Stoich Provisions checkout" style="display:block;width:100%;min-height:1600px;border:0;border-radius:8px;"></iframe>
 <script>
 (function(){
-  const frame=document.getElementById('stoich-order-frame');
+  const ORIGIN='https://stoich-provisions-orders.jpcalma09.workers.dev';
+  const frame=document.getElementById('stoich-order-form');
   async function sendCart(){
     try{
       const response=await fetch('/cart.js',{credentials:'same-origin',headers:{'Accept':'application/json'}});
       if(!response.ok) throw new Error('Could not load Shopify cart');
       const cart=await response.json();
-      frame.contentWindow.postMessage({type:'STOICH_SHOPIFY_CART',cart},'https://stoich-provisions-orders.jpcalma09.workers.dev');
+      frame.contentWindow.postMessage({type:'STOICH_SHOPIFY_CART',cart},ORIGIN);
     }catch(error){console.error('Stoich cart transfer failed:',error);}
   }
   window.addEventListener('message',function(event){
-    if(event.origin!=='https://stoich-provisions-orders.jpcalma09.workers.dev'||event.source!==frame.contentWindow)return;
-    if(event.data&&event.data.type==='STOICH_REQUEST_SHOPIFY_CART')sendCart();
+    if(event.origin!==ORIGIN||event.source!==frame.contentWindow||!event.data)return;
+    if(event.data.type==='STOICH_REQUEST_SHOPIFY_CART')sendCart();
+    if(event.data.type==='STOICH_FRAME_HEIGHT'){
+      const h=Math.max(600,Math.min(6000,Number(event.data.height)||0));
+      if(h){frame.style.minHeight='0';frame.style.height=h+'px';}
+    }
+    if(event.data.type==='STOICH_ORDER_SENT'){
+      window.scrollTo({top:frame.getBoundingClientRect().top+window.scrollY-80,behavior:'smooth'});
+    }
   });
   frame.addEventListener('load',sendCart);
   document.addEventListener('visibilitychange',function(){if(!document.hidden)sendCart();});

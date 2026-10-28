@@ -1,228 +1,409 @@
-
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Stoich Provisions — Order Request</title>
+<title>Stoich Provisions — Checkout</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+:root{--bg:#0b0b0c;--panel:#131315;--panel2:#18181b;--line:rgba(255,255,255,.1);--line2:rgba(255,255,255,.18);--text:#f3f3f3;--muted:#9b9ba4;--red:#E32402;--red2:#ff3b17;--ok:#2fbf71;--radius:16px}
 *{box-sizing:border-box}
-body{font-family:Arial,sans-serif;color:#171717;margin:0;padding:22px;background:#fff}
-main{max-width:780px;margin:auto}
-h1{font-size:28px;margin:0 0 8px}
-p{line-height:1.5}
-.muted{color:#666;font-size:14px}
-section{border:1px solid #ddd;border-radius:10px;padding:18px;margin:18px 0}
-label{display:block;font-weight:600;margin:13px 0 6px}
-input,select,textarea{width:100%;padding:12px;border:1px solid #bbb;border-radius:6px;font:inherit}
-button{background:#111;color:white;border:0;border-radius:6px;padding:14px 18px;font:inherit;font-weight:700;cursor:pointer;width:100%}
-button:disabled{opacity:.5}
-.item{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:10px 0}
-.item:last-child{border-bottom:0}
-.error{color:#a00}
-.success{background:#eff9ef;padding:14px;border-radius:8px}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:1080px;margin:0 auto;padding:clamp(20px,4vw,36px) clamp(16px,3vw,32px) 32px}
+.eyebrow{display:flex;align-items:center;gap:10px;margin:0 0 12px;font:600 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.eyebrow b{width:8px;height:8px;border-radius:50%;background:var(--red)}
+h1{margin:0;font-family:Anton,Impact,sans-serif;font-weight:400;text-transform:uppercase;font-size:clamp(40px,7vw,72px);line-height:.92;letter-spacing:.005em}
+.lede{margin:14px 0 0;max-width:60ch;color:var(--muted)}
+.steps{display:flex;gap:6px;margin:24px 0 0;padding:0;list-style:none;font:600 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.steps li{display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid var(--line);border-radius:999px;transition:all .3s}
+.steps li i{font-style:normal;display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.08);font-size:10px}
+.steps li.is-done{color:var(--text);border-color:var(--line2)}
+.steps li.is-done i{background:var(--red);color:#fff}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px;margin-top:28px;align-items:start}
+.side{position:sticky;top:16px;display:grid;gap:16px}
+.side .card+.card{margin-top:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:clamp(18px,3vw,26px)}
+.card+.card{margin-top:16px}
+.card h2{margin:0 0 4px;font-family:Anton,Impact,sans-serif;font-weight:400;text-transform:uppercase;font-size:24px;letter-spacing:.01em}
+.card h2 small{font:600 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.16em;color:var(--red);margin-right:8px;vertical-align:4px}
+.hint{margin:0 0 14px;color:var(--muted);font-size:13px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{margin-top:12px}
+.field>label,.legend{display:block;margin:0 0 6px;font:600 11px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:#c9c9cf}
+.field>label em,.legend em{font-style:normal;color:var(--red)}
+input[type=text],input[type=email],input[type=tel],textarea{width:100%;min-height:50px;padding:13px 14px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;outline:none;transition:border-color .2s,background .2s,box-shadow .2s}
+textarea{min-height:84px;resize:vertical}
+input::placeholder,textarea::placeholder{color:#6f6f78}
+input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227,36,2,.18)}
+.invalid input,.invalid textarea{border-color:#ff5a3c}
+.err{display:none;margin:6px 0 0;color:#ff7a60;font-size:12.5px}
+.invalid .err{display:block}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0;pointer-events:none}
+.chip span{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid var(--line2);border-radius:999px;background:var(--panel2);cursor:pointer;font-weight:600;font-size:14px;transition:all .2s}
+.chip input:checked+span{background:#fff;color:#000;border-color:#fff}
+.chip input:focus-visible+span{box-shadow:0 0 0 3px rgba(227,36,2,.35)}
+.opts{display:grid;gap:10px}
+.opt{position:relative;display:block}
+.opt input{position:absolute;opacity:0;pointer-events:none}
+.opt .box{display:grid;grid-template-columns:22px 1fr auto;gap:14px;align-items:center;padding:14px 16px;border:1px solid var(--line2);border-radius:14px;background:var(--panel2);cursor:pointer;transition:border-color .2s,background .2s}
+.opt .dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--line2);display:grid;place-items:center;transition:all .2s}
+.opt .dot::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--red);transform:scale(0);transition:transform .2s}
+.opt strong{display:block;font-size:15px}
+.opt small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.opt .tag{font:600 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.opt input:checked+.box{border-color:var(--red);background:rgba(227,36,2,.07)}
+.opt input:checked+.box .dot{border-color:var(--red)}
+.opt input:checked+.box .dot::after{transform:scale(1)}
+.opt input:focus-visible+.box{box-shadow:0 0 0 3px rgba(227,36,2,.3)}
+.reveal{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s ease}
+.reveal>div{overflow:hidden}
+.reveal.is-open{grid-template-rows:1fr}
+.submit{position:relative;overflow:hidden;isolation:isolate;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:58px;margin-top:18px;border:0;border-radius:999px;background:var(--red);color:#fff;font-weight:700;font-size:16px;letter-spacing:.02em;cursor:pointer;transition:color .3s,opacity .2s}
+.submit::before{content:"";position:absolute;inset:0;z-index:-1;background:#fff;transform:translateY(101%);transition:transform .45s cubic-bezier(.76,0,.24,1)}
+.submit:not(:disabled):hover{color:#000}
+.submit:not(:disabled):hover::before{transform:none}
+.submit:disabled{opacity:.45;cursor:not-allowed}
+.submit .spin{display:none;width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+.submit.is-busy .spin{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fine{margin:12px 0 0;color:var(--muted);font-size:12.5px;text-align:center}
+.alert{display:none;margin-top:14px;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,90,60,.4);background:rgba(255,90,60,.08);color:#ffb3a3;font-size:14px}
+.alert.is-on{display:block}
+.sum-toggle{display:none}
+.items{list-style:none;margin:14px 0 0;padding:0}
+.it{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.it:first-child{border-top:0}
+.thumb{position:relative;width:56px;height:56px;border-radius:10px;background:#fff;overflow:hidden;display:grid;place-items:center}
+.thumb img{width:100%;height:100%;object-fit:contain}
+.thumb .q{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;border:2px solid var(--panel)}
+.thumb .ph{font:700 10px/1 ui-monospace,monospace;color:#888;text-transform:uppercase}
+.it .t{font-weight:600;font-size:14px;line-height:1.3}
+.it .v{color:var(--muted);font-size:12.5px;margin-top:2px}
+.it .p{font-weight:700;font-size:14px;white-space:nowrap}
+.totals{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:grid;gap:8px;font-size:14px}
+.totals div{display:flex;justify-content:space-between;gap:12px}
+.totals .muted{color:var(--muted)}
+.totals .grand{margin-top:6px;padding-top:12px;border-top:1px solid var(--line);font-size:18px;font-weight:700}
+.totals .grand span:last-child{font-family:Anton,Impact,sans-serif;font-weight:400;font-size:26px;letter-spacing:.01em}
+.edit{display:inline-block;margin-top:14px;color:var(--muted);font-size:13px;text-decoration:underline;text-underline-offset:3px}
+.edit:hover{color:#fff}
+.skel{height:56px;border-radius:10px;background:linear-gradient(90deg,#1b1b1e 25%,#26262a 50%,#1b1b1e 75%);background-size:200% 100%;animation:sk 1.2s infinite;margin-top:10px}
+@keyframes sk{to{background-position:-200% 0}}
+.status{margin-top:12px;color:var(--muted);font-size:13px}
+.status button{background:none;border:0;padding:0;color:#fff;text-decoration:underline;cursor:pointer}
+.empty{padding:18px 0 4px;color:var(--muted)}
+.btn-ghost{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 20px;margin-top:12px;border:1px solid var(--line2);border-radius:999px;color:#fff;text-decoration:none;font-weight:600}
+.btn-ghost:hover{border-color:#fff}
+.trust{display:grid;gap:10px;margin-top:16px;font-size:13px;color:var(--muted)}
+.trust div{display:flex;gap:10px;align-items:flex-start}
+.trust svg{flex:none;margin-top:2px}
+.done{display:none;margin-top:28px;text-align:center;padding:clamp(28px,6vw,56px) clamp(18px,4vw,40px)}
+.done.is-on{display:block}
+.done .check{width:72px;height:72px;margin:0 auto 18px;border-radius:50%;background:rgba(47,191,113,.12);display:grid;place-items:center}
+.done h2{font-size:clamp(30px,5vw,44px)}
+.done .num{display:inline-block;margin:10px 0 6px;padding:8px 16px;border-radius:999px;background:var(--panel2);border:1px solid var(--line2);font:600 14px/1 ui-monospace,monospace;letter-spacing:.1em}
+.next{list-style:none;margin:22px auto 0;padding:0;max-width:440px;text-align:left;display:grid;gap:12px}
+.next li{display:grid;grid-template-columns:28px 1fr;gap:12px;color:#d6d6db}
+.next li b{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--panel2);border:1px solid var(--line2);font-size:12px}
+.done .cta{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 26px;margin-top:24px;border-radius:999px;background:var(--red);color:#fff;font-weight:700;text-decoration:none}
+.vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (max-width:900px){
+  .grid{grid-template-columns:1fr}
+  .side{display:contents}
+  .summary{order:-1}
+  .send{order:2}
+  .sum-toggle{display:flex;width:100%;justify-content:space-between;align-items:center;gap:12px;background:none;border:0;padding:0;cursor:pointer;text-align:left}
+  .sum-toggle .lab{font:600 12px/1 ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:#c9c9cf}
+  .sum-toggle .amt{font-family:Anton,Impact,sans-serif;font-size:22px}
+  .sum-toggle svg{transition:transform .3s}
+  .summary.is-open .sum-toggle svg{transform:rotate(180deg)}
+  .summary .sum-body{display:none}
+  .summary.is-open .sum-body{display:block}
+  .summary h2.sum-h{display:none}
+}
+@media (max-width:560px){.row{grid-template-columns:1fr}.steps li span{display:none}.steps li{padding:8px}.hint{display:none}.card h2{margin-bottom:8px}.lede{font-size:14px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
-<main>
-<h1>Stoich Provisions</h1>
-<p class="muted">Submit an order request. This does not collect payment or confirm stock. Our team will contact you to confirm availability, delivery/shipping, and payment arrangements.</p>
+<div class="wrap" id="app">
+  <p class="eyebrow"><b></b>Stoich Provisions · Guam</p>
+  <h1>Checkout</h1>
+  <p class="lede">Send us your order. No payment is taken here. We confirm stock and delivery first, then contact you to arrange payment.</p>
+  <ol class="steps" aria-label="Checkout progress">
+    <li data-step="cart"><i>1</i><span>Cart</span></li>
+    <li data-step="contact"><i>2</i><span>Contact</span></li>
+    <li data-step="fulfil"><i>3</i><span>Delivery</span></li>
+    <li data-step="send"><i>4</i><span>Send</span></li>
+  </ol>
 
-<section>
-<h2>Your cart</h2>
-<div id="cart-items">Waiting for your Shopify cart…</div>
-<p><strong>Subtotal: <span id="cart-total">$0.00</span></strong></p>
-<p id="cart-warning" class="muted">Connecting to your Shopify cart…</p>
-</section>
+  <div class="grid" id="grid">
+    <form id="order-form" novalidate>
+      <section class="card">
+        <h2><small>01</small>Contact</h2>
+        <p class="hint">So we can confirm your order.</p>
+        <div class="field" data-f="name">
+          <label for="name">Full name <em>*</em></label>
+          <input id="name" type="text" autocomplete="name" placeholder="Juan Dela Cruz" required>
+          <p class="err">Enter your name.</p>
+        </div>
+        <div class="row">
+          <div class="field" data-f="email">
+            <label for="email">Email <em>*</em></label>
+            <input id="email" type="email" autocomplete="email" inputmode="email" placeholder="you@email.com" required>
+            <p class="err">Enter a valid email.</p>
+          </div>
+          <div class="field" data-f="phone">
+            <label for="phone">Phone <em>*</em></label>
+            <input id="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="(671) 555-0123" required>
+            <p class="err">Enter a phone number.</p>
+          </div>
+        </div>
+        <div class="field" data-f="contact" role="radiogroup" aria-labelledby="contact-l">
+          <span class="legend" id="contact-l">Best way to reach you <em>*</em></span>
+          <div class="chips">
+            <label class="chip"><input type="radio" name="contact" value="WhatsApp"><span>WhatsApp</span></label>
+            <label class="chip"><input type="radio" name="contact" value="Text message"><span>Text</span></label>
+            <label class="chip"><input type="radio" name="contact" value="Phone call"><span>Call</span></label>
+            <label class="chip"><input type="radio" name="contact" value="Email"><span>Email</span></label>
+          </div>
+          <p class="err">Pick how we should contact you.</p>
+        </div>
+      </section>
 
-<form id="order-form">
-<section>
-<h2>Contact information</h2>
-<label for="name">Full name *</label>
-<input id="name" required autocomplete="name">
-<label for="email">Email *</label>
-<input id="email" type="email" required autocomplete="email">
-<label for="phone">Phone number *</label>
-<input id="phone" required autocomplete="tel">
-<label for="contact">Preferred contact method *</label>
-<select id="contact" required>
-<option value="">Choose one</option>
-<option>WhatsApp</option>
-<option>Text message</option>
-<option>Phone call</option>
-<option>Email</option>
-</select>
-</section>
+      <section class="card">
+        <h2><small>02</small>Delivery</h2>
+        <p class="hint">Choose how you'd like to get your order.</p>
+        <div class="field" data-f="fulfillment" role="radiogroup" aria-label="Fulfillment">
+          <div class="opts">
+            <label class="opt"><input type="radio" name="fulfillment" value="Guam store pickup"><span class="box"><span class="dot"></span><span><strong>Pickup</strong><small>Harmon, Guam · we'll message you when it's ready</small></span><span class="tag">Free</span></span></label>
+            <label class="opt"><input type="radio" name="fulfillment" value="Guam local delivery"><span class="box"><span class="dot"></span><span><strong>Local delivery</strong><small>Anywhere on Guam · flat fee confirmed with you</small></span><span class="tag">Guam</span></span></label>
+            <label class="opt"><input type="radio" name="fulfillment" value="Saipan delivery"><span class="box"><span class="dot"></span><span><strong>Saipan delivery</strong><small>Shipping cost quoted before you pay</small></span><span class="tag">Quote</span></span></label>
+          </div>
+          <p class="err">Choose pickup or delivery.</p>
+        </div>
+        <div class="reveal" id="addr-wrap"><div>
+          <div class="field" data-f="address">
+            <label for="address" id="address-l">Delivery address <em>*</em></label>
+            <textarea id="address" rows="2" autocomplete="street-address" placeholder="Street, village"></textarea>
+            <p class="err">Enter where we should deliver.</p>
+          </div>
+        </div></div>
+        <div class="field">
+          <label for="notes">Order notes <span style="color:var(--muted)">(optional)</span></label>
+          <textarea id="notes" rows="2" placeholder="Gate code, best time, questions about a product…"></textarea>
+        </div>
+      </section>
 
-<section>
-<h2>Fulfillment</h2>
-<label for="fulfillment">How would you like to receive your order? *</label>
-<select id="fulfillment" required>
-<option value="">Choose one</option>
-<option>Guam store pickup</option>
-<option>Guam local delivery</option>
-<option>Saipan delivery</option>
-</select>
-<label for="address">Delivery address or island (required for delivery)</label>
-<input id="address" placeholder="Enter delivery address">
-<label for="notes">Order notes (optional)</label>
-<textarea id="notes" rows="3" placeholder="Anything we should know?"></textarea>
-</section>
+    </form>
 
-<p class="muted">Saipan shipping costs will be quoted after you submit your request. No payment is taken on this page.</p>
-<button id="submit" type="submit" disabled>Submit Order Request</button>
-<p id="message" role="status"></p>
-</form>
-</main>
+    <div class="side">
+    <aside class="summary card" id="summary" aria-label="Order summary">
+      <button class="sum-toggle" type="button" id="sum-toggle" aria-expanded="false" aria-controls="sum-body">
+        <span><span class="lab">Order summary</span> <span id="sum-count" style="color:var(--muted);font-size:13px"></span></span>
+        <span style="display:flex;align-items:center;gap:10px"><span class="amt" id="sum-amt">—</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span>
+      </button>
+      <div class="sum-body" id="sum-body">
+        <h2 class="sum-h">Your order</h2>
+        <ul class="items" id="items" aria-live="polite"><li class="skel"></li><li class="skel"></li></ul>
+        <div class="totals" id="totals" hidden>
+          <div><span>Subtotal</span><span id="subtotal">$0.00</span></div>
+          <div class="muted"><span>Delivery</span><span id="ship" style="text-align:right">Choose an option</span></div>
+          <div class="grand"><span>Estimated total</span><span id="total">$0.00</span></div>
+        </div>
+        <p class="status" id="status">Loading your cart…</p>
+        <a class="edit" href="https://aqlx.shop/cart" target="_top">Edit cart</a>
+      </div>
+    </aside>
+      <section class="card send">
+      <h2><small>03</small>Send</h2>
+      <div class="trust">
+        <div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E32402" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg><span>No card needed. Nothing is charged when you send this.</span></div>
+        <div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E32402" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg><span>We check stock and confirm the total, including any delivery fee.</span></div>
+        <div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E32402" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg><span>You get an email copy of your request right away.</span></div>
+      </div>
+      <button class="submit" id="submit" type="submit" form="order-form" disabled><span class="spin" aria-hidden="true"></span><span id="submit-label">Waiting for your cart…</span></button>
+      <div class="alert" id="alert" role="alert"></div>
+      <p class="fine">By sending, you agree we may contact you about this order.</p>
+    </section>
+    </div>
+  </div>
+
+  <section class="card done" id="done" aria-live="polite">
+    <div class="check"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#2fbf71" stroke-width="2.6"><path d="M20 6 9 17l-5-5"/></svg></div>
+    <h2>Order request sent</h2>
+    <div class="num" id="done-num">#—</div>
+    <p class="hint" id="done-email" style="margin-top:8px">We emailed you a copy.</p>
+    <ol class="next">
+      <li><b>1</b><span>We check stock and confirm your total, including delivery if needed.</span></li>
+      <li><b>2</b><span>We contact you by <strong id="done-contact">your preferred method</strong> to arrange payment.</span></li>
+      <li><b>3</b><span>Pick up in Harmon or receive your delivery.</span></li>
+    </ol>
+    <a class="cta" href="https://aqlx.shop/collections/all" target="_top">Keep shopping</a>
+  </section>
+</div>
 
 <script>
 (function(){
   const API='https://stoich-provisions-orders.jpcalma09.workers.dev';
   const SHOP='https://aqlx.shop';
-  let cart=null;
   const $=id=>document.getElementById(id);
-  let retryTimer=null;
+  const form=$('order-form');
+  let cart=null,retryTimer=null,sent=false;
 
-  function money(cents){
-    return new Intl.NumberFormat('en-US',{
-      style:'currency',
-      currency:(cart&&cart.currency)||'USD'
-    }).format((Number(cents)||0)/100);
-  }
+  /* ---------- helpers ---------- */
+  function money(cents){return new Intl.NumberFormat('en-US',{style:'currency',currency:(cart&&cart.currency)||'USD'}).format((Number(cents)||0)/100);}
+  function store(k,v){try{v===undefined?localStorage.removeItem(k):localStorage.setItem(k,v);}catch(e){}}
+  function load(k){try{return localStorage.getItem(k)||'';}catch(e){return '';}}
+  function radio(name){const r=form.querySelector('input[name="'+name+'"]:checked');return r?r.value:'';}
+  function hasItems(){return !!(cart&&Array.isArray(cart.items)&&cart.items.length);}
+  function img(url,w){if(!url)return '';try{const u=new URL(url,SHOP);u.searchParams.set('width',w);return u.toString();}catch(e){return url;}}
+  let lastH=0;function postHeight(){const h=Math.ceil($('app').getBoundingClientRect().height);if(Math.abs(h-lastH)<2)return;lastH=h;try{window.parent.postMessage({type:'STOICH_FRAME_HEIGHT',height:h},SHOP);}catch(e){}}
+  if('ResizeObserver' in window)new ResizeObserver(postHeight).observe($('app'));
 
-  function requestCart(){
-    if(cart&&Array.isArray(cart.items)&&cart.items.length)return;
-    window.parent.postMessage(
-      {type:'STOICH_REQUEST_SHOPIFY_CART'},
-      SHOP
-    );
-  }
+  /* ---------- cart from the Shopify page ---------- */
+  function requestCart(){if(hasItems())return;try{window.parent.postMessage({type:'STOICH_REQUEST_SHOPIFY_CART'},SHOP);}catch(e){}}
 
   function renderCart(c){
-    if(!c||!Array.isArray(c.items))return;
+    if(!c||!Array.isArray(c.items)||sent)return;
     cart=c;
-    const container=$('cart-items');
-    container.replaceChildren();
-
+    const list=$('items');list.replaceChildren();
+    const count=c.items.reduce((s,i)=>s+(Number(i.quantity)||0),0);
+    $('sum-count').textContent=count?'('+count+')':'';
     if(!c.items.length){
-      container.textContent='Your Shopify cart is empty. Add products before submitting.';
-      $('cart-total').textContent=money(0);
-      $('cart-warning').textContent='Your cart is empty.';
-      $('submit').disabled=true;
-      return;
+      const li=document.createElement('li');li.className='empty';
+      li.innerHTML='Your cart is empty.<br><a class="btn-ghost" href="https://aqlx.shop/collections/all" target="_top">Browse the catalog</a>';
+      list.appendChild(li);
+      $('totals').hidden=true;$('status').textContent='';$('sum-amt').textContent=money(0);
+      update();return;
     }
-
     for(const item of c.items){
-      const row=document.createElement('div');
-      row.className='item';
-
-      const title=document.createElement('span');
-      title.textContent=
-        (item.product_title||item.title||'Product')+
-        (item.variant_title&&item.variant_title!=='Default Title'
-          ?' — '+item.variant_title:'')+
-        ' × '+item.quantity;
-
-      const price=document.createElement('strong');
-      price.textContent=money(item.final_line_price??item.line_price??0);
-      row.append(title,price);
-      container.appendChild(row);
+      const li=document.createElement('li');li.className='it';
+      const th=document.createElement('div');th.className='thumb';
+      const src=item.featured_image&&item.featured_image.url||item.image;
+      if(src){const im=document.createElement('img');im.alt='';im.loading='lazy';im.src=img(src,120);th.appendChild(im);}else{const ph=document.createElement('span');ph.className='ph';ph.textContent=(item.vendor||'Stoich').slice(0,4);th.appendChild(ph);}
+      const q=document.createElement('span');q.className='q';q.textContent=item.quantity;th.appendChild(q);
+      const mid=document.createElement('div');
+      const t=document.createElement('div');t.className='t';t.textContent=item.product_title||item.title||'Product';
+      const v=document.createElement('div');v.className='v';
+      const vt=item.variant_title&&item.variant_title!=='Default Title'?item.variant_title+' · ':'';
+      v.textContent=vt+item.quantity+' × '+money(item.final_price??item.price??0);
+      mid.append(t,v);
+      const p=document.createElement('div');p.className='p';p.textContent=money(item.final_line_price??item.line_price??0);
+      li.append(th,mid,p);list.appendChild(li);
     }
-
-    $('cart-total').textContent=money(c.total_price||0);
-    $('cart-warning').textContent='Cart received from Shopify.';
-    $('submit').disabled=false;
-    if(retryTimer)clearInterval(retryTimer);
+    $('totals').hidden=false;
+    $('status').textContent='';
+    if(retryTimer){clearInterval(retryTimer);retryTimer=null;}
+    update();
   }
 
-  window.addEventListener('message',event=>{
-    if(event.origin!==SHOP||event.source!==window.parent)return;
-    if(event.data&&event.data.type==='STOICH_SHOPIFY_CART'){
-      renderCart(event.data.cart);
-    }
+  window.addEventListener('message',e=>{
+    if(e.origin!==SHOP||e.source!==window.parent)return;
+    if(e.data&&e.data.type==='STOICH_SHOPIFY_CART')renderCart(e.data.cart);
   });
-
   requestCart();
   retryTimer=setInterval(requestCart,1500);
+  setTimeout(()=>{if(!cart){$('items').replaceChildren();$('status').innerHTML='We couldn’t load your cart. <button type="button" id="reload">Reload page</button>';const b=$('reload');if(b)b.addEventListener('click',()=>{try{window.top.location.reload();}catch(e){location.reload();}});}},8000);
 
-  setTimeout(()=>{
-    if(!cart||!Array.isArray(cart.items)||!cart.items.length){
-      $('cart-warning').textContent=
-        'Still waiting for Shopify. Check the Shopify page bridge and refresh.';
-    }
-  },5000);
+  /* ---------- totals, steps, button ---------- */
+  function update(){
+    const f=radio('fulfillment');
+    const sub=hasItems()?Number(cart.total_price)||0:0;
+    $('subtotal').textContent=money(sub);
+    $('ship').textContent=!f?'Choose an option':f==='Guam store pickup'?'Free pickup':f==='Guam local delivery'?'Flat fee, confirmed with you':'Quoted after review';
+    $('total').textContent=money(sub);
+    $('sum-amt').textContent=money(sub);
+    const open=!!f&&f!=='Guam store pickup';
+    $('addr-wrap').classList.toggle('is-open',open);
+    $('address-l').innerHTML=(f==='Saipan delivery'?'Saipan delivery details':'Delivery address')+' <em>*</em>';
+    $('address').placeholder=f==='Saipan delivery'?'Address in Saipan, contact on island':'Street, village';
+    const contactOk=$('name').value.trim().length>1&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('email').value.trim())&&$('phone').value.replace(/\D/g,'').length>=5&&!!radio('contact');
+    const fulOk=!!f&&(!open||$('address').value.trim().length>=5);
+    mark('cart',hasItems());mark('contact',contactOk);mark('fulfil',fulOk);mark('send',sent);
+    const btn=$('submit');
+    btn.disabled=!hasItems()||btn.classList.contains('is-busy');
+    $('submit-label').textContent=!cart?'Waiting for your cart…':!hasItems()?'Your cart is empty':'Send order request · '+money(sub);
+  }
+  function mark(step,on){const li=document.querySelector('[data-step="'+step+'"]');if(li)li.classList.toggle('is-done',!!on);}
 
-  $('fulfillment').addEventListener('change',()=>{
-    const method=$('fulfillment').value;
-    const needed=!!method&&method!=='Guam store pickup';
-    $('address').required=needed;
-    $('address').placeholder=method==='Saipan delivery'
-      ?'Enter Saipan delivery details':'Enter delivery address';
-  });
+  /* ---------- validation ---------- */
+  const checks={
+    name:()=>$('name').value.trim().length>1,
+    email:()=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('email').value.trim()),
+    phone:()=>$('phone').value.replace(/\D/g,'').length>=5,
+    contact:()=>!!radio('contact'),
+    fulfillment:()=>!!radio('fulfillment'),
+    address:()=>{const f=radio('fulfillment');return !f||f==='Guam store pickup'||$('address').value.trim().length>=5;}
+  };
+  function validate(key){const ok=checks[key]();const el=form.querySelector('[data-f="'+key+'"]');if(el)el.classList.toggle('invalid',!ok);return ok;}
+  ['name','email','phone'].forEach(k=>{$(k).addEventListener('blur',()=>{if($(k).value)validate(k);});$(k).addEventListener('input',()=>{if(form.querySelector('[data-f="'+k+'"]').classList.contains('invalid'))validate(k);update();});});
+  $('address').addEventListener('input',()=>{if(form.querySelector('[data-f="address"]').classList.contains('invalid'))validate('address');update();});
+  form.addEventListener('change',e=>{if(e.target.name==='contact')validate('contact');if(e.target.name==='fulfillment'){validate('fulfillment');form.querySelector('[data-f="address"]').classList.remove('invalid');}update();});
 
-  $('order-form').addEventListener('submit',async event=>{
-    event.preventDefault();
-    $('message').className='';
-    $('message').textContent='';
+  /* remember contact details on this device */
+  ['name','email','phone'].forEach(k=>{const v=load('stoich-co-'+k);if(v)$(k).value=v;});
+  const savedC=load('stoich-co-contact');if(savedC){const r=form.querySelector('input[name="contact"][value="'+savedC+'"]');if(r)r.checked=true;}
 
-    if(!cart||!Array.isArray(cart.items)||!cart.items.length){
-      $('message').className='error';
-      $('message').textContent='Your cart has not loaded. Please wait or refresh this page.';
-      requestCart();
-      return;
-    }
+  /* mobile summary toggle */
+  $('sum-toggle').addEventListener('click',()=>{const s=$('summary');const o=!s.classList.contains('is-open');s.classList.toggle('is-open',o);$('sum-toggle').setAttribute('aria-expanded',String(o));postHeight();});
+
+  /* ---------- submit ---------- */
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const alertEl=$('alert');alertEl.classList.remove('is-on');
+    if(!hasItems()){alertEl.textContent='Your cart hasn’t loaded yet. Please wait a moment or reload the page.';alertEl.classList.add('is-on');requestCart();return;}
+    const keys=['name','email','phone','contact','fulfillment','address'];
+    const bad=keys.filter(k=>!validate(k));
+    if(bad.length){const first=form.querySelector('[data-f="'+bad[0]+'"]');const inp=first&&first.querySelector('input,textarea');if(inp)inp.focus({preventScroll:true});if(first)first.scrollIntoView({behavior:'smooth',block:'center'});return;}
 
     const items=cart.items.map(item=>({
       product_id:String(item.product_id||''),
       variant_id:String(item.variant_id||item.id||''),
+      handle:String(item.handle||''),
       title:String(item.product_title||item.title||'Product'),
-      variant:String(item.variant_title&&item.variant_title!=='Default Title'
-        ?item.variant_title:''),
+      variant:String(item.variant_title&&item.variant_title!=='Default Title'?item.variant_title:''),
       sku:String(item.sku||''),
       quantity:Number(item.quantity),
       unit_price_cents:Number(item.final_price??item.price??0)
     }));
-
     const payload={
-      customer:{
-        name:$('name').value,
-        email:$('email').value,
-        phone:$('phone').value,
-        contact_preference:$('contact').value
-      },
-      fulfillment_method:$('fulfillment').value,
-      address:$('address').value,
-      customer_notes:$('notes').value,
-      items,
-      currency:cart.currency||'USD',
-      cart_id:String(cart.token||cart.note||'')
+      customer:{name:$('name').value.trim(),email:$('email').value.trim(),phone:$('phone').value.trim(),contact_preference:radio('contact')},
+      fulfillment_method:radio('fulfillment'),
+      address:radio('fulfillment')==='Guam store pickup'?'':$('address').value.trim(),
+      customer_notes:$('notes').value.trim(),
+      items,currency:cart.currency||'USD',cart_id:String(cart.token||'')
     };
-
-    $('submit').disabled=true;
-    $('submit').textContent='Submitting…';
-
+    const btn=$('submit');btn.classList.add('is-busy');btn.disabled=true;$('submit-label').textContent='Sending…';
     try{
-      const response=await fetch(API+'/api/orders',{
-        method:'POST',
-        headers:{'content-type':'application/json'},
-        body:JSON.stringify(payload)
-      });
-      const data=await response.json();
-      if(!response.ok)throw new Error(data.error||'Could not submit your request.');
-
-      $('message').className='success';
-      $('message').textContent=
-        'Request received! Your request number is #'+data.order_number+'. '+
-        (data.message||'');
-      $('order-form').reset();
-    }catch(error){
-      $('message').className='error';
-      $('message').textContent=error.message||'Something went wrong. Please try again.';
+      const r=await fetch(API+'/api/orders',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
+      let data={};try{data=await r.json();}catch(x){}
+      if(!r.ok)throw new Error(data.error||'We couldn’t send your request. Please try again.');
+      ['name','email','phone'].forEach(k=>store('stoich-co-'+k,payload.customer[k]));store('stoich-co-contact',payload.customer.contact_preference);
+      sent=true;mark('send',true);
+      $('done-num').textContent='Request #'+data.order_number;
+      $('done-email').textContent='We emailed a copy to '+payload.customer.email+'.';
+      $('done-contact').textContent=payload.customer.contact_preference.toLowerCase();
+      $('grid').hidden=true;$('done').classList.add('is-on');
+      window.scrollTo({top:0,behavior:'smooth'});
+      try{window.parent.postMessage({type:'STOICH_ORDER_SENT',order_number:data.order_number},SHOP);}catch(x){}
+      postHeight();
+    }catch(err){
+      alertEl.textContent=err.message||'Something went wrong. Please try again.';alertEl.classList.add('is-on');
     }finally{
-      $('submit').disabled=!(cart&&Array.isArray(cart.items)&&cart.items.length);
-      $('submit').textContent='Submit Order Request';
+      btn.classList.remove('is-busy');update();
     }
   });
+
+  update();
 })();
 </script>
 </body>
