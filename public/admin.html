@@ -6,6 +6,14 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#0b0b0c">
 <title>Stoich Orders</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Stoich Orders">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -37,7 +45,7 @@ label.l{display:block;margin:12px 0 6px;color:#c9c9cf}
 .login h1{margin:8px 0 6px;font-family:Anton,Impact,sans-serif;font-weight:400;text-transform:uppercase;font-size:44px;line-height:.95}
 .check{display:flex;align-items:center;gap:8px;margin:12px 0 4px;color:var(--muted);font-size:13px}
 /* app shell */
-header.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:14px max(16px,calc((100vw - 1280px)/2));background:rgba(11,11,12,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+header.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:calc(14px + env(safe-area-inset-top)) max(16px,calc((100vw - 1280px)/2)) 14px;background:rgba(11,11,12,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 header.top .brand{display:flex;align-items:baseline;gap:10px}
 header.top .brand b{font-family:Anton,Impact,sans-serif;font-weight:400;font-size:24px;letter-spacing:.02em;text-transform:uppercase}
 header.top .sp{flex:1}
@@ -84,7 +92,7 @@ main.app{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
 .scrim.is-on{opacity:1;pointer-events:auto}
 .drawer{position:fixed;top:0;right:0;bottom:0;z-index:50;width:min(560px,100%);background:var(--bg);border-left:1px solid var(--line2);transform:translateX(102%);transition:transform .32s cubic-bezier(.2,.7,.2,1);display:flex;flex-direction:column}
 .drawer.is-on{transform:none}
-.dh{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.dh{display:flex;align-items:center;gap:12px;padding:calc(16px + env(safe-area-inset-top)) 18px 16px;border-bottom:1px solid var(--line)}
 .dh h2{margin:0;font-family:Anton,Impact,sans-serif;font-weight:400;font-size:30px;letter-spacing:.01em;line-height:1}
 .dh .sp{flex:1}
 .xbtn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line2);background:transparent;cursor:pointer;display:grid;place-items:center}
