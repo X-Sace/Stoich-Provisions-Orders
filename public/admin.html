@@ -35,7 +35,7 @@ a{color:inherit}
 .btn.ghost{background:transparent}
 .btn.sm{min-height:34px;padding:0 12px;font-size:13px}
 .btn.danger{background:transparent;border-color:rgba(255,90,60,.5);color:#ff8a70}
-input[type=text],input[type=password],input[type=email],input[type=number],input[type=search],select,textarea{width:100%;min-height:44px;padding:10px 12px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;outline:none}
+input[type=text],input[type=password],input[type=email],input[type=number],input[type=search],input[type=url],select,textarea{width:100%;min-height:44px;padding:10px 12px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;outline:none}
 input:focus,select:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227,36,2,.18)}
 textarea{min-height:84px;resize:vertical}
 label.l{display:block;margin:12px 0 6px;color:#c9c9cf}
@@ -119,6 +119,14 @@ main.app{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
 .pay-hist p{margin:0;padding:10px 0;border-top:1px solid var(--line)}
 .pay-hist p:first-child{border-top:0}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.paytag{display:inline-flex;align-items:center;margin:4px 0 0 6px;padding:2px 8px;border-radius:6px;font:600 11px/1.6 ui-monospace,monospace;letter-spacing:.06em}
+.paytag.card{background:rgba(76,141,255,.14);color:var(--blue)}
+.paytag.cash{background:rgba(47,191,113,.14);color:var(--ok)}
+.linkcard{border:1px solid rgba(76,141,255,.35);background:linear-gradient(180deg,rgba(76,141,255,.08),transparent)}
+.linkcard .sent{display:grid;gap:4px;padding:10px 12px;margin:0 0 10px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:13px}
+.linkcard .sent a{color:var(--blue);word-break:break-all}
+.send3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.send3 .btn{flex-direction:column;gap:4px;min-height:58px;border-radius:14px;font-size:12px}
 .danger-zone{margin-top:18px;padding-top:14px;border-top:1px dashed var(--line2)}
 .toast{position:fixed;left:50%;bottom:22px;z-index:80;transform:translate(-50%,20px);opacity:0;pointer-events:none;padding:12px 18px;border-radius:999px;background:#fff;color:#000;font-weight:600;box-shadow:0 12px 40px rgba(0,0,0,.4);transition:all .3s;max-width:calc(100% - 32px);text-align:center}
 .toast.is-on{opacity:1;transform:translate(-50%,0)}
@@ -226,6 +234,7 @@ const load=k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}};
 function ago(iso){const s=(Date.now()-new Date(iso))/1000;if(s<60)return 'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';if(s<604800)return Math.floor(s/86400)+'d ago';return new Date(iso).toLocaleDateString();}
 function toast(t,err){const el=$('toast');el.textContent=t;el.className='toast is-on'+(err?' err':'');clearTimeout(el._t);el._t=setTimeout(()=>el.className='toast',3200);}
 function digits(p){let d=String(p||'').replace(/\D/g,'');if(d.length===7)d='1671'+d;else if(d.length===10)d='1'+d;return d;}
+function payTag(o){if(o.payment_method==='Cash (in store)')return '<span class="paytag cash">CASH</span>';if(o.payment_method==='Card (invoice link)')return `<span class="paytag card">CARD${o.pay_link?' · LINK SENT':''}</span>`;return '';}
 function shortFul(f){return({'Guam store pickup':'Pickup · Harmon','Pickup box (24/7)':'Pickup box','Guam local delivery':'Guam delivery','Saipan delivery':'Saipan delivery'})[f]||f;}
 async function api(path,opts={}){const r=await fetch(path,{...opts,headers:{'content-type':'application/json',authorization:'Bearer '+token,...(opts.headers||{})}});const d=await r.json().catch(()=>({}));if(r.status===401){logout();throw Error('Session expired. Enter the admin token again.');}if(!r.ok)throw Error(d.error||'Request failed');return d;}
 
@@ -247,7 +256,7 @@ function render(){
   $('chips').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{view=b.dataset.v;render();});
   const q=$('search').value.trim().toLowerCase();
   const list=orders.filter(o=>(q?[o.order_number,o.customer_name,o.email,o.phone].some(v=>String(v||'').toLowerCase().includes(q)):inView(o)));
-  $('list').innerHTML=list.length?list.map(o=>{const items=(o.items||[]).reduce((s,i)=>s+(Number(i.quantity)||0),0);return `<button class="ord${selected&&selected.id===o.id?' is-sel':''}" data-id="${esc(o.id)}"><span class="num">#${o.order_number}</span><span class="who"><b>${esc(o.customer_name)}</b><span>${esc(o.phone)} · ${esc(o.contact_preference)}</span></span><span class="ful"><b style="font-weight:600">${esc(shortFul(o.fulfillment_method))}</b><span>${items} item${items===1?'':'s'} · ${ago(o.created_at)}</span>${o.box_code?`<span class="boxtag">BOX · ${esc(o.box_code)}</span>`:''}</span><span class="amt">${money(o.subtotal_cents)}</span><span class="st">${pill(o.status)}</span></button>`;}).join(''):`<div class="empty">${q?'No orders match that search.':'Nothing here right now.'}</div>`;
+  $('list').innerHTML=list.length?list.map(o=>{const items=(o.items||[]).reduce((s,i)=>s+(Number(i.quantity)||0),0);return `<button class="ord${selected&&selected.id===o.id?' is-sel':''}" data-id="${esc(o.id)}"><span class="num">#${o.order_number}</span><span class="who"><b>${esc(o.customer_name)}</b><span>${esc(o.phone)} · ${esc(o.contact_preference)}</span></span><span class="ful"><b style="font-weight:600">${esc(shortFul(o.fulfillment_method))}</b><span>${items} item${items===1?'':'s'} · ${ago(o.created_at)}</span>${o.box_code?`<span class="boxtag">BOX · ${esc(o.box_code)}</span>`:''}${payTag(o)}</span><span class="amt">${money(o.subtotal_cents)}</span><span class="st">${pill(o.status)}</span></button>`;}).join(''):`<div class="empty">${q?'No orders match that search.':'Nothing here right now.'}</div>`;
   $('list').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>openOrder(b.dataset.id));
 }
 document.querySelectorAll('.stat').forEach(b=>b.onclick=()=>{view=view===b.dataset.view?'open':b.dataset.view;render();});
@@ -269,6 +278,7 @@ function renderDetail(reset){
   const waText=encodeURIComponent(`Hi ${first}, this is Stoich Provisions about your order request #${o.order_number}.`);
   const isBox=o.fulfillment_method==='Pickup box (24/7)';
   const keepNotes=!reset&&document.activeElement&&document.activeElement.id==='notes'?$('notes').value:null;
+  const keepLink=!reset&&$('linkUrl')?{u:$('linkUrl').value,a:$('linkAmt').value,n:$('linkNote').value}:null;
   $('dBody').innerHTML=`
   <section class="sec">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><div style="font-size:18px;font-weight:700">${esc(o.customer_name)}</div><div class="muted">${new Date(o.created_at).toLocaleString()} · prefers ${esc(o.contact_preference)}</div></div></div>
@@ -278,7 +288,7 @@ function renderDetail(reset){
       <a class="btn" href="tel:+${wa}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></svg>Call</a>
       <a class="btn" href="mailto:${esc(o.email)}?subject=${encodeURIComponent('Your Stoich Provisions order #'+o.order_number)}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>Email</a>
     </div>
-    <dl class="kv" style="margin:14px 0 0"><dt>Phone</dt><dd>${esc(o.phone)}</dd><dt>Email</dt><dd>${esc(o.email)}</dd><dt>Fulfillment</dt><dd><b>${esc(o.fulfillment_method)}</b></dd>${o.address?`<dt>Address</dt><dd>${esc(o.address)}<br><a class="muted" href="https://maps.google.com/?q=${encodeURIComponent(o.address)}" target="_blank" rel="noopener">Open in Maps ↗</a></dd>`:''}${o.customer_notes?`<dt>Customer note</dt><dd>${esc(o.customer_notes)}</dd>`:''}</dl>
+    <dl class="kv" style="margin:14px 0 0"><dt>Phone</dt><dd>${esc(o.phone)}</dd><dt>Email</dt><dd>${esc(o.email)}</dd><dt>Fulfillment</dt><dd><b>${esc(o.fulfillment_method)}</b></dd><dt>Payment</dt><dd><b>${esc(o.payment_method||'Not chosen')}</b></dd>${o.address?`<dt>Address</dt><dd>${esc(o.address)}<br><a class="muted" href="https://maps.google.com/?q=${encodeURIComponent(o.address)}" target="_blank" rel="noopener">Open in Maps ↗</a></dd>`:''}${o.customer_notes?`<dt>Customer note</dt><dd>${esc(o.customer_notes)}</dd>`:''}</dl>
   </section>
 
   <section class="sec boxcard">
@@ -301,6 +311,23 @@ function renderDetail(reset){
     <div class="tot"><span>Subtotal</span><span>${money(o.subtotal_cents)}</span></div>
   </section>
 
+  <section class="sec linkcard">
+    <h3 class="mono" style="color:var(--blue)">Payment link${o.payment_method==='Card (invoice link)'?' · customer chose card':o.payment_method==='Cash (in store)'?' · customer chose cash':''}</h3>
+    ${o.pay_link?`<div class="sent"><span class="muted">Last sent ${ago(o.pay_link_sent_at)} · ${money(o.pay_link_cents)}</span><a href="${esc(o.pay_link)}" target="_blank" rel="noopener">${esc(o.pay_link)}</a></div>`:`<p class="muted" style="margin:0 0 10px">${o.payment_method==='Cash (in store)'?'This customer plans to pay cash at pickup. You can still send a card link if they ask for one.':'Create the invoice or payment link in your payment app (Square, PayPal, Stripe…), paste it here, then send it.'}</p>`}
+    <form id="linkForm">
+      <label class="l mono" for="linkUrl">Payment link</label>
+      <input id="linkUrl" type="url" inputmode="url" placeholder="https://…" autocomplete="off" value="${esc(o.pay_link||'')}">
+      <div class="row2" style="margin-top:8px"><div><label class="l mono" for="linkAmt">Amount</label><input id="linkAmt" type="number" min="0" step="0.01" inputmode="decimal" value="${((Number(o.subtotal_cents)||0)/100).toFixed(2)}"></div><div><label class="l mono" for="linkNote">Note (optional)</label><input id="linkNote" type="text" maxlength="500" placeholder="Includes $10 delivery"></div></div>
+      <button class="btn white" style="width:100%;margin-top:12px" type="submit" id="linkEmail">Email link to ${esc(o.email)}</button>
+    </form>
+    <div class="send3">
+      <button class="btn" type="button" data-via="wa"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Z"/></svg>WhatsApp link</button>
+      <button class="btn" type="button" data-via="sms"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Text link</button>
+      <button class="btn" type="button" data-via="copy"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy message</button>
+    </div>
+    <p class="muted" style="font-size:12.5px;margin:8px 0 0">Every option saves the link on this order and moves it to “Awaiting payment”. Only “Email link” sends an email.</p>
+  </section>
+
   <section class="sec">
     <h3 class="mono muted">Payments & receipts</h3>
     <div id="paySum" class="muted">Loading…</div>
@@ -320,6 +347,7 @@ function renderDetail(reset){
     <div class="danger-zone"><button class="btn danger sm" id="delBtn">Delete order</button></div>
   </section>`;
   if(keepNotes!==null){$('notes').value=keepNotes;$('notes').focus();}
+  if(keepLink){if(keepLink.u)$('linkUrl').value=keepLink.u;$('linkAmt').value=keepLink.a;$('linkNote').value=keepLink.n;}
 
   /* pickup box */
   const showForm=()=>{$('boxForm').hidden=false;$('boxHint').hidden=false;$('boxBtn').style.display='none';$('boxCode').value='';setTimeout(()=>$('boxCode').focus(),50);};
@@ -337,6 +365,14 @@ function renderDetail(reset){
 
   /* delete */
   $('delBtn').onclick=async()=>{const n=o.order_number;const typed=prompt('Type '+n+' to permanently delete order #'+n+'. This cannot be undone.');if(String(typed||'').trim()!==String(n))return;try{await api('/api/admin/orders/'+o.id,{method:'DELETE'});selected=null;closeAll();toast('Order #'+n+' deleted');await refresh();}catch(err){toast(err.message,true);}};
+
+  /* payment link */
+  const linkData=()=>({url:$('linkUrl').value.trim(),amount:$('linkAmt').value,note:$('linkNote').value.trim()});
+  const linkMsg=d=>{const amt=d.amount!==''?' of $'+Number(d.amount).toFixed(2):'';return `Hi ${first}, your Stoich Provisions order #${o.order_number} is confirmed. You can pay${amt} by card here: ${d.url}${d.note?'\n'+d.note:''}\nThank you!`;};
+  const okUrl=u=>{try{const x=new URL(u);return x.protocol==='https:'}catch(e){return false}};
+  async function saveLink(sendEmail){const d=linkData();if(!okUrl(d.url)){toast('Paste the full payment link starting with https://',true);$('linkUrl').focus();return null;}const r=await api('/api/admin/orders/'+o.id+'/payment-link',{method:'POST',body:JSON.stringify({...d,send_email:sendEmail})});return {d,r};}
+  $('linkForm').onsubmit=async e=>{e.preventDefault();const b=$('linkEmail');b.disabled=true;const t=b.textContent;b.textContent='Sending…';try{const out=await saveLink(true);if(out){toast(out.r.email_queued?'Payment link emailed to '+o.email:'Saved. No valid customer email on file.');await refresh();}}catch(err){toast(err.message,true);}finally{if(document.body.contains(b)){b.disabled=false;b.textContent=t;}}};
+  document.querySelectorAll('.send3 [data-via]').forEach(b=>b.onclick=async()=>{const via=b.dataset.via;const d=linkData();if(!okUrl(d.url)){toast('Paste the full payment link starting with https://',true);$('linkUrl').focus();return;}const msg=linkMsg(d);let win=null;if(via==='wa')win=window.open('about:blank','_blank');try{if(via==='copy'){await navigator.clipboard.writeText(msg);toast('Message copied. Paste it anywhere.');}await saveLink(false);if(via==='wa'&&win)win.location.href=`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`;if(via==='sms')location.href=`sms:+${wa}?&body=${encodeURIComponent(msg)}`;await refresh();}catch(err){if(win)win.close();toast(err.message,true);}});
 
   /* payments */
   loadPayments(o);

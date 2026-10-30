@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS orders (
   phone TEXT NOT NULL,
   contact_preference TEXT NOT NULL,
   fulfillment_method TEXT NOT NULL,
+  payment_method TEXT NOT NULL DEFAULT '',
   address TEXT DEFAULT '',
   customer_notes TEXT DEFAULT '',
   internal_notes TEXT DEFAULT '',
@@ -30,3 +31,12 @@ CREATE TABLE IF NOT EXISTS pickup_box_codes (
   code TEXT NOT NULL,
   loaded_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS payment_links (
+  id TEXT PRIMARY KEY,
+  order_id TEXT NOT NULL,
+  url TEXT NOT NULL,
+  amount_cents INTEGER NOT NULL DEFAULT 0,
+  note TEXT NOT NULL DEFAULT '',
+  sent_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_payment_links_order ON payment_links(order_id, sent_at DESC);
