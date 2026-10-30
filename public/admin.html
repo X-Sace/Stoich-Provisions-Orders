@@ -118,6 +118,20 @@ main.app{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
 .steps .chip{min-height:36px}
 .pay-hist p{margin:0;padding:10px 0;border-top:1px solid var(--line)}
 .pay-hist p:first-child{border-top:0}
+.mails{display:grid;gap:6px}
+.mail{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
+.mail b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mail span{font-size:12.5px;color:var(--muted)}
+.mail .fail{color:var(--warn)}
+.mailview{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:16px}
+.mailview.is-on{display:flex}
+.mailview .box{width:min(720px,100%);height:min(88vh,900px);display:flex;flex-direction:column;background:var(--bg);border:1px solid var(--line2);border-radius:16px;overflow:hidden}
+.mailview .mh{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-bottom:1px solid var(--line)}
+.mailview .mh div{flex:1;min-width:0}
+.mailview .mh b{display:block;font-size:14px}
+.mailview .mh span{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;word-break:break-all}
+.mailview iframe{flex:1;width:100%;border:0;background:#f3f3f1}
+.mailview pre{flex:1;margin:0;padding:16px;overflow:auto;white-space:pre-wrap;font:13px/1.6 ui-monospace,monospace}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .paytag{display:inline-flex;align-items:center;margin:4px 0 0 6px;padding:2px 8px;border-radius:6px;font:600 11px/1.6 ui-monospace,monospace;letter-spacing:.06em}
 .paytag.card{background:rgba(76,141,255,.14);color:var(--blue)}
@@ -191,6 +205,13 @@ main.app{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
 
 <div class="scrim" id="scrim"></div>
 
+<div class="mailview" id="mailView" role="dialog" aria-modal="true" aria-labelledby="mvSubject">
+  <div class="box">
+    <div class="mh"><div><b id="mvSubject">Email</b><span id="mvMeta"></span></div><button class="xbtn" id="mvClose" aria-label="Close preview"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <iframe id="mvFrame" title="Email preview" sandbox=""></iframe>
+    <pre id="mvText" hidden></pre>
+  </div>
+</div>
 <aside class="drawer" id="drawer" aria-modal="true" role="dialog" aria-labelledby="dTitle">
   <div class="dh">
     <h2 id="dTitle">#—</h2>
@@ -342,6 +363,11 @@ function renderDetail(reset){
   </section>
 
   <section class="sec">
+    <h3 class="mono muted">Emails sent</h3>
+    <div class="mails" id="mailList"><p class="muted" style="margin:0">Loading…</p></div>
+  </section>
+
+  <section class="sec">
     <h3 class="mono muted">Internal notes</h3>
     <textarea id="notes" placeholder="Only your team sees this">${esc(o.internal_notes||'')}</textarea>
     <button class="btn" id="notesSave" style="margin-top:10px">Save notes</button>
@@ -376,9 +402,20 @@ function renderDetail(reset){
   document.querySelectorAll('.send3 [data-via]').forEach(b=>b.onclick=async()=>{const via=b.dataset.via;const d=linkData();if(!okUrl(d.url)){toast('Paste the full payment link starting with https://',true);$('linkUrl').focus();return;}const msg=linkMsg(d);let win=null;if(via==='wa')win=window.open('about:blank','_blank');try{if(via==='copy'){await navigator.clipboard.writeText(msg);toast('Message copied. Paste it anywhere.');}await saveLink(false);if(via==='wa'&&win)win.location.href=`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`;if(via==='sms')location.href=`sms:+${wa}?&body=${encodeURIComponent(msg)}`;await refresh();}catch(err){if(win)win.close();toast(err.message,true);}});
 
   /* payments */
-  loadPayments(o);
+  loadPayments(o);loadEmails(o);
   $('payForm').onsubmit=async e=>{e.preventDefault();try{const d=await api('/api/admin/orders/'+o.id+'/payments',{method:'POST',body:JSON.stringify({kind:$('payKind').value,amount:$('payAmt').value,method:$('payMethod').value,reference:$('payRef').value,notes:$('payNotes').value})});toast('Recorded · receipt emailed · '+(LABELS[d.status]||d.status));$('payRef').value='';$('payNotes').value='';await refresh();loadPayments(selected);}catch(err){toast(err.message,true);}};
 }
+const MAIL_KIND={order_received:'Order received · customer',new_order_shop:'New order · you',payment_link:'Payment link / invoice',payment_receipt:'Payment receipt · customer',refund_receipt:'Refund receipt · customer',paid_shop:'Paid copy · you',status_update:'Status update · customer',pickup_box:'Pickup box code · customer'};
+let mailCache={};
+async function loadEmails(o){const box=$('mailList');if(!box)return;const draw=list=>{if(!$('mailList')||!selected||selected.id!==o.id)return;$('mailList').innerHTML=list.length?list.map(m=>`<div class="mail"><div style="min-width:0"><b>${esc(MAIL_KIND[m.kind]||m.subject)}</b><span>${esc(m.to_addr)} · ${new Date(m.created_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}${m.ok?'':' · <span class="fail">not sent</span>'}</span></div><button class="btn sm" type="button" data-mail="${esc(m.id)}">Preview</button></div>`).join(''):'<p class="muted" style="margin:0">No emails sent for this order yet. Emails sent before this update aren\'t listed.</p>';$('mailList').querySelectorAll('[data-mail]').forEach(b=>b.onclick=()=>previewEmail(b.dataset.mail));};
+  if(mailCache[o.id])draw(mailCache[o.id]);
+  try{const d=await api('/api/admin/orders/'+o.id+'/emails');mailCache[o.id]=d.emails||[];draw(mailCache[o.id]);}catch(err){if($('mailList'))$('mailList').innerHTML=`<p class="muted" style="margin:0">${esc(err.message)}</p>`;}}
+async function previewEmail(id){try{const {email:m}=await api('/api/admin/emails/'+id);$('mvSubject').textContent=m.subject;$('mvMeta').textContent=`To ${m.to_addr} · ${new Date(m.created_at).toLocaleString()}${m.ok?'':' · NOT SENT (check Gmail settings)'}`;
+  if(m.html){$('mvFrame').hidden=false;$('mvText').hidden=true;$('mvFrame').srcdoc=m.html;}else{$('mvFrame').hidden=true;$('mvText').hidden=false;$('mvText').textContent=m.body;}
+  $('mailView').classList.add('is-on');$('mvClose').focus();}catch(err){toast(err.message,true);}}
+$('mvClose').onclick=()=>$('mailView').classList.remove('is-on');
+$('mailView').addEventListener('mousedown',e=>{if(e.target===$('mailView'))$('mailView').classList.remove('is-on');});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('mailView').classList.contains('is-on')){e.stopImmediatePropagation();$('mailView').classList.remove('is-on');}},true);
 async function loadPayments(o){try{const d=await api('/api/admin/orders/'+o.id+'/payments');if(!selected||selected.id!==o.id)return;$('paySum').innerHTML=`Paid <b style="color:#fff">${money(d.paid_cents)}</b> of ${money(d.order.subtotal_cents)}${d.refunded_cents?' · refunded '+money(d.refunded_cents):''} · <b style="color:${d.balance_cents?'var(--warn)':'var(--ok)'}">${d.balance_cents?money(d.balance_cents)+' left':'Paid in full'}</b>`;$('payHist').innerHTML=(d.payments||[]).map(p=>`<p><b>${p.kind==='refund'?'Refund':'Payment'} · ${money(p.amount_cents)}</b> <span class="muted">· ${esc(p.method)} · ${new Date(p.created_at).toLocaleDateString()}${p.reference?' · '+esc(p.reference):''}</span>${p.notes?`<br><span class="muted">${esc(p.notes)}</span>`:''}</p>`).join('');const amt=$('payAmt');if(amt&&!amt.value&&d.balance_cents)amt.value=(d.balance_cents/100).toFixed(2);}catch(err){$('paySum').textContent=err.message;}}
 
 /* ---------- settings: recipients ---------- */
