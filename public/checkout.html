@@ -98,6 +98,14 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
 .totals .grand span:last-child{font-family:Anton,Impact,sans-serif;font-weight:400;font-size:26px;letter-spacing:.01em}
 .edit{display:inline-block;margin-top:14px;color:var(--muted);font-size:13px;text-decoration:underline;text-underline-offset:3px}
 .edit:hover{color:#fff}
+.qty{display:inline-flex;align-items:center;gap:4px;margin-top:8px}
+.qty button{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:transparent;color:inherit;font:inherit;font-size:15px;line-height:1;cursor:pointer}
+.qty button:hover{border-color:#fff}
+.qty output{min-width:24px;text-align:center;font-size:13px;font-weight:600}
+.qty .rm{width:auto;border:0;padding:0 6px;margin-left:4px;color:var(--muted);font-size:12.5px;text-decoration:underline;text-underline-offset:3px}
+.qty .rm:hover{color:#fff}
+.items.is-busy .qty button{opacity:.45;pointer-events:none}
+.cart-err{margin:10px 0 0;color:#ffb3a3;font-size:13px}
 .skel{height:56px;border-radius:10px;background:linear-gradient(90deg,#1b1b1e 25%,#26262a 50%,#1b1b1e 75%);background-size:200% 100%;animation:sk 1.2s infinite;margin-top:10px}
 @keyframes sk{to{background-position:-200% 0}}
 .status{margin-top:12px;color:var(--muted);font-size:13px}
@@ -238,7 +246,8 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
           <div class="grand"><span>Estimated total</span><span id="total">$0.00</span></div>
         </div>
         <p class="status" id="status">Loading your cart…</p>
-        <a class="edit" href="https://aqlx.shop/cart" target="_top">Edit cart</a>
+        <p class="cart-err" id="cart-err" role="alert" hidden></p>
+        <a class="edit" href="https://aqlx.shop/collections/all" target="_top">Keep shopping</a>
       </div>
     </aside>
       <section class="card send">
@@ -315,7 +324,14 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
       const v=document.createElement('div');v.className='v';
       const vt=item.variant_title&&item.variant_title!=='Default Title'?item.variant_title+' · ':'';
       v.textContent=vt+item.quantity+' × '+money(item.final_price??item.price??0);
-      mid.append(t,v);
+      const qc=document.createElement('div');qc.className='qty';
+      if(typeof item.key==='string'&&item.key){
+        const nm=item.product_title||'item';
+        const mk=(txt,q,label,cls)=>{const b=document.createElement('button');b.type='button';b.textContent=txt;b.dataset.key=item.key;b.dataset.q=String(q);b.setAttribute('aria-label',label);if(cls)b.className=cls;return b;};
+        const out=document.createElement('output');out.textContent=item.quantity;
+        qc.append(mk('\u2212',item.quantity-1,'Decrease '+nm),out,mk('+',item.quantity+1,'Increase '+nm),mk('Remove',0,'Remove '+nm,'rm'));
+      }
+      mid.append(t,v,qc);
       const p=document.createElement('div');p.className='p';p.textContent=money(item.final_line_price??item.line_price??0);
       li.append(th,mid,p);list.appendChild(li);
     }
@@ -325,9 +341,21 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
     update();
   }
 
+  /* ---------- edit the cart from inside the form ---------- */
+  let changeTimer=null;
+  function cartBusy(on){$('items').classList.toggle('is-busy',on);if(changeTimer){clearTimeout(changeTimer);changeTimer=null;}}
+  function cartError(msg){const el=$('cart-err');el.textContent=msg||'';el.hidden=!msg;}
+  $('items').addEventListener('click',e=>{
+    const b=e.target.closest('button[data-key]');if(!b||sent||$('items').classList.contains('is-busy'))return;
+    cartError('');cartBusy(true);
+    try{window.parent.postMessage({type:'STOICH_CART_CHANGE',key:b.dataset.key,quantity:Math.max(0,parseInt(b.dataset.q,10)||0)},SHOP);}catch(x){}
+    changeTimer=setTimeout(()=>{cartBusy(false);cartError('We couldn’t update your cart. Refresh the page and try again.');},8000);
+  });
+
   window.addEventListener('message',e=>{
     if(e.origin!==SHOP||e.source!==window.parent)return;
-    if(e.data&&e.data.type==='STOICH_SHOPIFY_CART')renderCart(e.data.cart);
+    if(e.data&&e.data.type==='STOICH_SHOPIFY_CART'){cartBusy(false);renderCart(e.data.cart);}
+    if(e.data&&e.data.type==='STOICH_CART_ERROR'){cartBusy(false);cartError(String(e.data.message||'Could not update your cart.'));}
   });
   requestCart();
   retryTimer=setInterval(requestCart,1500);
