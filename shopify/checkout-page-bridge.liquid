@@ -1,0 +1,64 @@
+<script>
+(function () {
+  const WORKER = 'https://stoich-provisions-orders.jpcalma09.workers.dev';
+  const JSON_HEADERS = { 'Content-Type': 'application/json', Accept: 'application/json' };
+
+  function connect() {
+    const frame = document.querySelector('iframe[src*="stoich-provisions-orders.jpcalma09.workers.dev/checkout"]');
+    if (!frame || frame.dataset.stoichBridge === 'connected') return;
+    frame.dataset.stoichBridge = 'connected';
+
+    function post(msg) {
+      try { frame.contentWindow.postMessage(msg, WORKER); } catch (e) {}
+    }
+
+    async function getCart() {
+      const r = await fetch('/cart.js', { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+      if (!r.ok) throw new Error('Could not load Shopify cart');
+      return r.json();
+    }
+
+    async function sendCart() {
+      try { post({ type: 'STOICH_SHOPIFY_CART', cart: await getCart() }); }
+      catch (error) { console.error('Stoich cart transfer failed:', error); }
+    }
+
+    /* Customer changed a quantity or removed an item inside the order form */
+    async function changeLine(key, quantity) {
+      try {
+        const r = await fetch('/cart/change.js', {
+          method: 'POST', credentials: 'same-origin', headers: JSON_HEADERS,
+          body: JSON.stringify({ id: key, quantity: quantity })
+        });
+        const cart = await r.json();
+        if (!r.ok) throw new Error(cart.description || cart.message || 'Could not update cart');
+        post({ type: 'STOICH_SHOPIFY_CART', cart: cart });
+        document.dispatchEvent(new CustomEvent('stoich:cart-changed'));
+      } catch (error) {
+        post({ type: 'STOICH_CART_ERROR', message: error.message || 'Could not update cart' });
+        sendCart();
+      }
+    }
+
+    window.addEventListener('message', event => {
+      if (event.origin !== WORKER || event.source !== frame.contentWindow) return;
+      const d = event.data || {};
+      if (d.type === 'STOICH_REQUEST_SHOPIFY_CART') sendCart();
+      if (d.type === 'STOICH_CART_CHANGE' && typeof d.key === 'string' && /^[\w:-]{1,200}$/.test(d.key)) {
+        const q = Math.max(0, Math.min(999, parseInt(d.quantity, 10) || 0));
+        changeLine(d.key, q);
+      }
+      if (d.type === 'STOICH_FRAME_HEIGHT' && Number(d.height) > 300 && Number(d.height) < 20000) {
+        frame.style.minHeight = '0';
+        frame.style.height = Math.ceil(Number(d.height)) + 'px';
+      }
+    });
+
+    frame.addEventListener('load', sendCart);
+    sendCart();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', connect);
+  else connect();
+})();
+</script>
