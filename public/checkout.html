@@ -198,7 +198,7 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
           <div class="opts">
             <label class="opt"><input type="radio" name="fulfillment" value="Guam store pickup"><span class="box"><span class="dot"></span><span><strong>Pickup</strong><small>Harmon, Guam · we'll message you when it's ready</small></span><span class="tag">Free</span></span></label>
             <label class="opt"><input type="radio" name="fulfillment" value="Pickup box (24/7)"><span class="box"><span class="dot"></span><span><strong>Pickup box</strong><small>Unit C7, 220 East Harmon Industrial · we send your code once it's loaded</small></span><span class="tag">24/7</span></span></label>
-            <label class="opt"><input type="radio" name="fulfillment" value="Guam local delivery"><span class="box"><span class="dot"></span><span><strong>Local delivery</strong><small>Anywhere on Guam · flat fee confirmed with you</small></span><span class="tag">Guam</span></span></label>
+            <label class="opt"><input type="radio" name="fulfillment" value="Guam local delivery"><span class="box"><span class="dot"></span><span><strong>Local delivery</strong><small>Anywhere on Guam · $10 flat fee</small></span><span class="tag">Guam</span></span></label>
             <label class="opt"><input type="radio" name="fulfillment" value="Saipan delivery"><span class="box"><span class="dot"></span><span><strong>Saipan delivery</strong><small>Shipping cost quoted before you pay</small></span><span class="tag">Quote</span></span></label>
           </div>
           <p class="err">Choose pickup or delivery.</p>
@@ -284,6 +284,7 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
   const $=id=>document.getElementById(id);
   const form=$('order-form');
   let cart=null,retryTimer=null,sent=false;
+  const DELIVERY_FEE=1000; /* Guam local delivery, cents */
 
   /* ---------- helpers ---------- */
   function money(cents){return new Intl.NumberFormat('en-US',{style:'currency',currency:(cart&&cart.currency)||'USD'}).format((Number(cents)||0)/100);}
@@ -365,8 +366,8 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
     const f=radio('fulfillment');
     const sub=hasItems()?Number(cart.total_price)||0:0;
     $('subtotal').textContent=money(sub);
-    $('ship').textContent=!f?'Choose an option':f==='Guam store pickup'?'Free pickup':f==='Pickup box (24/7)'?'Free · code sent when ready':f==='Guam local delivery'?'Flat fee, confirmed with you':'Quoted after review';
-    $('total').textContent=money(sub);
+    $('ship').textContent=!f?'Choose an option':f==='Guam store pickup'?'Free pickup':f==='Pickup box (24/7)'?'Free · code sent when ready':f==='Guam local delivery'?money(DELIVERY_FEE):'Quoted after review';
+    $('total').textContent=money(sub+(f==='Guam local delivery'&&sub?DELIVERY_FEE:0));
     $('sum-amt').textContent=money(sub);
     const open=f==='Guam local delivery'||f==='Saipan delivery';
     $('addr-wrap').classList.toggle('is-open',open);
