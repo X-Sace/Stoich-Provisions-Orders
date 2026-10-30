@@ -220,6 +220,7 @@ main.app{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
 <div class="toast" id="toast" role="status"></div>
 
 <script>
+const DELIVERY_FEE_CENTS={'Guam local delivery':1000};const feeOf=o=>DELIVERY_FEE_CENTS[o&&o.fulfillment_method]||0;
 (()=>{
 const $=id=>document.getElementById(id);
 const LABELS={new:'New',confirmed:'Confirmed',processing:'Processing',awaiting_payment:'Awaiting payment',partially_paid:'Partially paid',paid:'Paid',ready_for_pickup:'Ready for pickup',out_for_delivery:'Out for delivery',shipped:'Shipped',on_hold:'On hold',completed:'Completed',cancelled:'Cancelled',refunded:'Refunded',payment_failed:'Payment failed'};
@@ -308,7 +309,7 @@ function renderDetail(reset){
   <section class="sec">
     <h3 class="mono muted">Items</h3>
     <ul class="items">${(o.items||[]).map(i=>`<li><span>${Number(i.quantity)} × ${esc(i.title)}${i.variant?`<small>${esc(i.variant)}${i.sku?' · '+esc(i.sku):''}</small>`:(i.sku?`<small>${esc(i.sku)}</small>`:'')}</span><b>${money(i.line_total_cents)}</b></li>`).join('')}</ul>
-    <div class="tot"><span>Subtotal</span><span>${money(o.subtotal_cents)}</span></div>
+    <div class="tot"><span>Subtotal</span><span>${money(o.subtotal_cents)}</span></div>${feeOf(o)?`<div class="tot" style="border-top:0;padding-top:4px;margin-top:0"><span>Delivery</span><span>${money(feeOf(o))}</span></div><div class="tot" style="border-top:0;padding-top:4px;margin-top:0"><span>Total</span><span>${money(Number(o.subtotal_cents)+feeOf(o))}</span></div>`:''}
   </section>
 
   <section class="sec linkcard">
@@ -317,7 +318,7 @@ function renderDetail(reset){
     <form id="linkForm">
       <label class="l mono" for="linkUrl">Payment link</label>
       <input id="linkUrl" type="url" inputmode="url" placeholder="https://…" autocomplete="off" value="${esc(o.pay_link||'')}">
-      <div class="row2" style="margin-top:8px"><div><label class="l mono" for="linkAmt">Amount</label><input id="linkAmt" type="number" min="0" step="0.01" inputmode="decimal" value="${((Number(o.subtotal_cents)||0)/100).toFixed(2)}"></div><div><label class="l mono" for="linkNote">Note (optional)</label><input id="linkNote" type="text" maxlength="500" placeholder="Includes $10 delivery"></div></div>
+      <div class="row2" style="margin-top:8px"><div><label class="l mono" for="linkAmt">Amount</label><input id="linkAmt" type="number" min="0" step="0.01" inputmode="decimal" value="${((Number(o.pay_link_cents)||((Number(o.subtotal_cents)||0)+feeOf(o)))/100).toFixed(2)}"></div><div><label class="l mono" for="linkNote">Note (optional)</label><input id="linkNote" type="text" maxlength="500" placeholder="Includes $10 delivery"></div></div>
       <button class="btn white" style="width:100%;margin-top:12px" type="submit" id="linkEmail">Email link to ${esc(o.email)}</button>
     </form>
     <div class="send3">
