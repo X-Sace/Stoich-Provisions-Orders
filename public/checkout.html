@@ -63,6 +63,9 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
 .opt input:checked+.box .dot{border-color:var(--red)}
 .opt input:checked+.box .dot::after{transform:scale(1)}
 .opt input:focus-visible+.box{box-shadow:0 0 0 3px rgba(227,36,2,.3)}
+.opt input:disabled+.box{opacity:.45;cursor:not-allowed}
+.opt .ico{display:grid;place-items:center;width:22px;height:22px;color:var(--muted)}
+.paynote{margin:10px 0 0;color:var(--muted);font-size:13px}
 .reveal{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s ease}
 .reveal>div{overflow:hidden}
 .reveal.is-open{grid-template-rows:1fr}
@@ -142,7 +145,8 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
     <li data-step="cart"><i>1</i><span>Cart</span></li>
     <li data-step="contact"><i>2</i><span>Contact</span></li>
     <li data-step="fulfil"><i>3</i><span>Delivery</span></li>
-    <li data-step="send"><i>4</i><span>Send</span></li>
+    <li data-step="pay"><i>4</i><span>Payment</span></li>
+    <li data-step="send"><i>5</i><span>Send</span></li>
   </ol>
 
   <div class="grid" id="grid">
@@ -204,6 +208,19 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
         </div>
       </section>
 
+      <section class="card">
+        <h2><small>03</small>Payment</h2>
+        <p class="hint">Nothing is charged now. Choose how you'll pay once we confirm your order.</p>
+        <div class="field" data-f="payment" role="radiogroup" aria-label="Payment method">
+          <div class="opts">
+            <label class="opt"><input type="radio" name="payment" value="Card (invoice link)"><span class="box"><span class="dot"></span><span><strong>Card · invoice link</strong><small>We send a secure payment link by email or text once your total is confirmed</small></span><span class="tag">Card</span></span></label>
+            <label class="opt" id="cash-opt"><input type="radio" name="payment" value="Cash (in store)" id="cash-in"><span class="box"><span class="dot"></span><span><strong>Cash · in store</strong><small id="cash-sub">Pay when you pick up at Harmon</small></span><span class="tag">Cash</span></span></label>
+          </div>
+          <p class="err">Choose how you'd like to pay.</p>
+          <p class="paynote" id="cash-note" hidden>Cash is only available for store pickup.</p>
+        </div>
+      </section>
+
     </form>
 
     <div class="side">
@@ -225,9 +242,9 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
       </div>
     </aside>
       <section class="card send">
-      <h2><small>03</small>Send</h2>
+      <h2><small>04</small>Send</h2>
       <div class="trust">
-        <div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E32402" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg><span>No card needed. Nothing is charged when you send this.</span></div>
+        <div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E32402" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg><span>Nothing is charged when you send this. Card customers get a secure payment link after we confirm.</span></div>
         <div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E32402" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg><span>We check stock and confirm the total, including any delivery fee.</span></div>
         <div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E32402" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg><span>You get an email copy of your request right away.</span></div>
       </div>
@@ -245,7 +262,7 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
     <p class="hint" id="done-email" style="margin-top:8px">We emailed you a copy.</p>
     <ol class="next">
       <li><b>1</b><span>We check stock and confirm your total, including delivery if needed.</span></li>
-      <li><b>2</b><span>We contact you by <strong id="done-contact">your preferred method</strong> to arrange payment.</span></li>
+      <li><b>2</b><span id="done-step2">We contact you by <strong id="done-contact">your preferred method</strong> to arrange payment.</span></li>
       <li><b>3</b><span id="done-step3">Pick up in Harmon or receive your delivery.</span></li>
     </ol>
     <a class="cta" href="https://aqlx.shop/collections/all" target="_top">Keep shopping</a>
@@ -264,6 +281,7 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
   function money(cents){return new Intl.NumberFormat('en-US',{style:'currency',currency:(cart&&cart.currency)||'USD'}).format((Number(cents)||0)/100);}
   function store(k,v){try{v===undefined?localStorage.removeItem(k):localStorage.setItem(k,v);}catch(e){}}
   function load(k){try{return localStorage.getItem(k)||'';}catch(e){return '';}}
+  function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function radio(name){const r=form.querySelector('input[name="'+name+'"]:checked');return r?r.value:'';}
   function hasItems(){return !!(cart&&Array.isArray(cart.items)&&cart.items.length);}
   function img(url,w){if(!url)return '';try{const u=new URL(url,SHOP);u.searchParams.set('width',w);return u.toString();}catch(e){return url;}}
@@ -329,7 +347,12 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
     $('address').placeholder=f==='Saipan delivery'?'Address in Saipan, contact on island':'Street, village';
     const contactOk=$('name').value.trim().length>1&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('email').value.trim())&&$('phone').value.replace(/\D/g,'').length>=5&&!!radio('contact');
     const fulOk=!!f&&(!open||$('address').value.trim().length>=5);
-    mark('cart',hasItems());mark('contact',contactOk);mark('fulfil',fulOk);mark('send',sent);
+    const cashOk=!f||f==='Guam store pickup';
+    const cashIn=$('cash-in');cashIn.disabled=!cashOk;
+    if(!cashOk&&cashIn.checked){cashIn.checked=false;}
+    $('cash-sub').textContent=cashOk?'Pay when you pick up at Harmon':'Only for store pickup';
+    $('cash-note').hidden=cashOk;
+    mark('cart',hasItems());mark('contact',contactOk);mark('fulfil',fulOk);mark('pay',!!radio('payment'));mark('send',sent);
     const btn=$('submit');
     btn.disabled=!hasItems()||btn.classList.contains('is-busy');
     $('submit-label').textContent=!cart?'Waiting for your cart…':!hasItems()?'Your cart is empty':'Send order request · '+money(sub);
@@ -343,12 +366,13 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
     phone:()=>$('phone').value.replace(/\D/g,'').length>=5,
     contact:()=>!!radio('contact'),
     fulfillment:()=>!!radio('fulfillment'),
+    payment:()=>!!radio('payment'),
     address:()=>{const f=radio('fulfillment');return !(f==='Guam local delivery'||f==='Saipan delivery')||$('address').value.trim().length>=5;}
   };
   function validate(key){const ok=checks[key]();const el=form.querySelector('[data-f="'+key+'"]');if(el)el.classList.toggle('invalid',!ok);return ok;}
   ['name','email','phone'].forEach(k=>{$(k).addEventListener('blur',()=>{if($(k).value)validate(k);});$(k).addEventListener('input',()=>{if(form.querySelector('[data-f="'+k+'"]').classList.contains('invalid'))validate(k);update();});});
   $('address').addEventListener('input',()=>{if(form.querySelector('[data-f="address"]').classList.contains('invalid'))validate('address');update();});
-  form.addEventListener('change',e=>{if(e.target.name==='contact')validate('contact');if(e.target.name==='fulfillment'){validate('fulfillment');form.querySelector('[data-f="address"]').classList.remove('invalid');}update();});
+  form.addEventListener('change',e=>{if(e.target.name==='contact')validate('contact');if(e.target.name==='payment')validate('payment');if(e.target.name==='fulfillment'){validate('fulfillment');form.querySelector('[data-f="address"]').classList.remove('invalid');}update();});
 
   /* remember contact details on this device */
   ['name','email','phone'].forEach(k=>{const v=load('stoich-co-'+k);if(v)$(k).value=v;});
@@ -362,7 +386,7 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
     e.preventDefault();
     const alertEl=$('alert');alertEl.classList.remove('is-on');
     if(!hasItems()){alertEl.textContent='Your cart hasn’t loaded yet. Please wait a moment or reload the page.';alertEl.classList.add('is-on');requestCart();return;}
-    const keys=['name','email','phone','contact','fulfillment','address'];
+    const keys=['name','email','phone','contact','fulfillment','address','payment'];
     const bad=keys.filter(k=>!validate(k));
     if(bad.length){const first=form.querySelector('[data-f="'+bad[0]+'"]');const inp=first&&first.querySelector('input,textarea');if(inp)inp.focus({preventScroll:true});if(first)first.scrollIntoView({behavior:'smooth',block:'center'});return;}
 
@@ -379,6 +403,7 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
     const payload={
       customer:{name:$('name').value.trim(),email:$('email').value.trim(),phone:$('phone').value.trim(),contact_preference:radio('contact')},
       fulfillment_method:radio('fulfillment'),
+      payment_method:radio('payment'),
       address:(radio('fulfillment')==='Guam local delivery'||radio('fulfillment')==='Saipan delivery')?$('address').value.trim():'',
       customer_notes:$('notes').value.trim(),
       items,currency:cart.currency||'USD',cart_id:String(cart.token||'')
@@ -393,6 +418,8 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
       $('done-num').textContent='Request #'+data.order_number;
       $('done-email').textContent='We emailed a copy to '+payload.customer.email+'.';
       $('done-contact').textContent=payload.customer.contact_preference.toLowerCase();
+      if(payload.payment_method==='Card (invoice link)')$('done-step2').textContent='We send you a secure card payment link by email'+(({'WhatsApp':' and WhatsApp','Text message':' and text'})[payload.customer.contact_preference]||'')+'.';
+      else if(payload.payment_method==='Cash (in store)')$('done-step2').textContent='Bring cash when you pick up. We message you when it’s ready.';
       if(payload.fulfillment_method==='Pickup box (24/7)')$('done-step3').textContent='When your order is in the pickup box, we email you the box code. Grab it anytime.';
       $('grid').hidden=true;$('done').classList.add('is-on');
       window.scrollTo({top:0,behavior:'smooth'});
