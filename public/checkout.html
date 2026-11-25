@@ -39,7 +39,7 @@ h1{margin:0;font-family:Anton,Impact,sans-serif;font-weight:400;text-transform:u
 .field{margin-top:12px}
 .field>label,.legend{display:block;margin:0 0 6px;font:600 11px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:#c9c9cf}
 .field>label em,.legend em{font-style:normal;color:var(--red)}
-input[type=text],input[type=email],input[type=tel],textarea{width:100%;min-height:50px;padding:13px 14px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;outline:none;transition:border-color .2s,background .2s,box-shadow .2s}
+input[type=text],input[type=email],input[type=tel],input[type=password],input:not([type]),textarea{width:100%;min-height:50px;padding:13px 14px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;outline:none;transition:border-color .2s,background .2s,box-shadow .2s}
 textarea{min-height:84px;resize:vertical}
 input::placeholder,textarea::placeholder{color:#6f6f78}
 input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227,36,2,.18)}
@@ -143,6 +143,27 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
   .summary h2.sum-h{display:none}
 }
 @media (max-width:560px){.row{grid-template-columns:1fr}.steps li span{display:none}.steps li{padding:8px}.hint{display:none}.card h2{margin-bottom:8px}.lede{font-size:14px}}
+.sale{display:none;align-items:center;gap:12px;margin:22px 0 0;padding:13px 16px;border:1px solid rgba(227,36,2,.45);border-radius:14px;background:linear-gradient(100deg,rgba(227,36,2,.26),rgba(227,36,2,.04))}
+.sale.is-on{display:flex;flex-wrap:wrap}
+.sale .tag{flex:0 0 auto;font:700 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.16em;text-transform:uppercase;color:#fff;background:var(--red);padding:7px 11px;border-radius:999px}
+.sale .txt{font-size:13.5px;color:#eee}
+.sale .txt b{color:#fff}
+.it .was{color:var(--muted);text-decoration:line-through;font-weight:400;font-size:12.5px}
+.it .off{display:inline-block;margin-top:4px;font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.09em;text-transform:uppercase;color:#ff9a85;border:1px solid rgba(227,36,2,.5);border-radius:999px;padding:4px 7px}
+.totals .save{color:#7fe6aa}
+.totals .save span:first-child{display:flex;flex-direction:column}
+.totals .save small{color:var(--muted);font-size:11.5px;font-weight:400;margin-top:2px}
+.trade .mini{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.trade .mini input{width:100%}
+.tbtn{width:100%;margin-top:12px;min-height:46px;border:1px solid var(--line2);border-radius:999px;background:rgba(255,255,255,.06);color:#fff;font-weight:600;cursor:pointer;transition:background .2s}
+.tbtn:hover{background:rgba(255,255,255,.12)}
+.tbtn[disabled]{opacity:.55;cursor:default}
+.terr{margin:10px 0 0;color:#ffb3a3;font-size:13px}
+.twho{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px;padding:12px 14px;border:1px solid rgba(47,191,113,.4);border-radius:12px;background:rgba(47,191,113,.08);font-size:14px}
+.twho b{font-weight:700}
+.twho .pct{font:700 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:#9ff0c2}
+.tlink{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:13px}
+@media (max-width:560px){.trade .mini{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -158,6 +179,11 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
     <li data-step="pay"><i>4</i><span>Payment</span></li>
     <li data-step="send"><i>5</i><span>Send</span></li>
   </ol>
+
+  <div class="sale" id="saleBar" aria-live="polite">
+    <span class="tag">Black Friday</span>
+    <span class="txt" id="saleText"></span>
+  </div>
 
   <div class="grid" id="grid">
     <form id="order-form" novalidate>
@@ -235,6 +261,24 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
     </form>
 
     <div class="side">
+    <section class="card trade" id="tradeCard">
+      <h2>Trade account</h2>
+      <p class="hint" id="tradeHint" style="margin-bottom:12px">Detailer or reseller with an account? Sign in to see your pricing on this order.</p>
+      <div id="tradeSignedOut">
+        <form id="tradeForm">
+          <div class="mini">
+            <div class="field" style="margin-top:0"><label for="tradeUser">Username</label><input id="tradeUser" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>
+            <div class="field" style="margin-top:0"><label for="tradePass">Password</label><input id="tradePass" type="password" autocomplete="current-password" required></div>
+          </div>
+          <button class="tbtn" type="submit" id="tradeBtn">Sign in</button>
+          <p class="terr" id="tradeErr" role="alert" hidden></p>
+        </form>
+      </div>
+      <div id="tradeSignedIn" hidden>
+        <p class="twho"><b id="tradeCo">—</b><span class="pct" id="tradePct"></span></p>
+        <button type="button" class="tlink" id="tradeOutBtn">Sign out of trade account</button>
+      </div>
+    </section>
     <aside class="summary card" id="summary" aria-label="Order summary">
       <button class="sum-toggle" type="button" id="sum-toggle" aria-expanded="false" aria-controls="sum-body">
         <span><span class="lab">Order summary</span> <span id="sum-count" style="color:var(--muted);font-size:13px"></span></span>
@@ -244,6 +288,8 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
         <h2 class="sum-h">Your order</h2>
         <ul class="items" id="items" aria-live="polite"><li class="skel"></li><li class="skel"></li></ul>
         <div class="totals" id="totals" hidden>
+          <div class="muted" id="grossRow" hidden><span>Items</span><span id="gross">$0.00</span></div>
+          <div class="save" id="saveRow" hidden><span><span>You save</span><small id="saveLabel"></small></span><span id="save">-$0.00</span></div>
           <div><span>Subtotal</span><span id="subtotal">$0.00</span></div>
           <div class="muted"><span>Delivery</span><span id="ship" style="text-align:right">Choose an option</span></div>
           <div class="grand"><span>Estimated total</span><span id="total">$0.00</span></div>
@@ -287,6 +333,7 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
   const $=id=>document.getElementById(id);
   const form=$('order-form');
   let cart=null,retryTimer=null,sent=false;
+  let quote=null,quoteSig='',merchant=null,mToken='';
   const DELIVERY_FEE=1000; /* Guam local delivery, cents */
 
   /* ---------- helpers ---------- */
@@ -297,6 +344,83 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
   function radio(name){const r=form.querySelector('input[name="'+name+'"]:checked');return r?r.value:'';}
   function hasItems(){return !!(cart&&Array.isArray(cart.items)&&cart.items.length);}
   function img(url,w){if(!url)return '';try{const u=new URL(url,SHOP);u.searchParams.set('width',w);return u.toString();}catch(e){return url;}}
+
+  /* ---------- sale pricing ----------
+     The worker prices the cart, so the figures shown here are the ones the order is written with. */
+  function cartItems(){return ((cart&&cart.items)||[]).map(item=>({
+    product_id:String(item.product_id||''),
+    variant_id:String(item.variant_id||item.id||''),
+    handle:String(item.handle||''),
+    title:String(item.product_title||item.title||'Product'),
+    variant:String(item.variant_title&&item.variant_title!=='Default Title'?item.variant_title:''),
+    sku:String(item.sku||''),
+    quantity:Number(item.quantity),
+    unit_price_cents:Number(item.final_price??item.price??0)
+  }));}
+  function cartSig(){return hasItems()?cartItems().map(i=>i.variant_id+'x'+i.quantity).join('|')+(mToken?'#trade':''):'';}
+  function lineQuote(item){if(!quote||!Array.isArray(quote.items))return null;const vid=String(item.variant_id||item.id||'');return quote.items.find(q=>String(q.variant_id)===vid)||null;}
+  async function quoteCart(){
+    if(!hasItems()){quote=null;quoteSig='';return;}
+    const sig=cartSig();quoteSig=sig;
+    try{
+      const r=await fetch(API+'/api/quote',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({items:cartItems(),merchant_token:mToken||undefined})});
+      const d=await r.json().catch(()=>({}));
+      if(sig!==quoteSig)return;
+      if(r.ok){quote=d;if(d.merchant)setMerchant(d.merchant);}
+      else{quote=null;if(r.status===409&&d.error)cartError(d.error);}
+    }catch(e){if(sig===quoteSig)quote=null;}
+    if(sig===quoteSig&&cart&&!sent)renderCart(cart);
+  }
+  async function loadSale(){
+    try{
+      const r=await fetch(API+'/api/sale');const d=await r.json().catch(()=>({}));
+      if(!r.ok||!d.sale_on||!Array.isArray(d.rules)||!d.rules.length)return;
+      $('saleText').innerHTML=d.rules.slice(0,6).map(x=>'<b>'+Number(x.percent)+'% off</b> '+esc(x.match_value||'everything')).join(' · ');
+      $('saleBar').classList.add('is-on');postHeight();
+    }catch(e){}
+  }
+
+  /* ---------- trade accounts ---------- */
+  function setMerchant(m){
+    merchant=m||null;const on=!!merchant;
+    $('tradeSignedOut').hidden=on;$('tradeSignedIn').hidden=!on;
+    $('tradeHint').textContent=on?'Your trade pricing is applied to this order.':'Detailer or reseller with an account? Sign in to see your pricing on this order.';
+    if(on){
+      $('tradeCo').textContent=merchant.company||merchant.username;
+      $('tradePct').textContent=Number(merchant.discount_percent)?Number(merchant.discount_percent)+'% trade discount':'Account pricing';
+    }
+    postHeight();
+  }
+  function clearTrade(){mToken='';store('stoich-trade-token',undefined);setMerchant(null);}
+  $('tradeForm').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const err=$('tradeErr'),btn=$('tradeBtn');err.hidden=true;btn.disabled=true;btn.textContent='Signing in…';
+    try{
+      const r=await fetch(API+'/api/merchant/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username:$('tradeUser').value.trim().toLowerCase(),password:$('tradePass').value})});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(d.error||'We couldn’t sign you in. Check your details and try again.');
+      mToken=d.token;store('stoich-trade-token',mToken);
+      $('tradePass').value='';setMerchant(d.merchant);
+      quote=null;quoteSig='';quoteCart();
+    }catch(x){err.textContent=x.message;err.hidden=false;}
+    finally{btn.disabled=false;btn.textContent='Sign in';}
+  });
+  $('tradeOutBtn').addEventListener('click',async()=>{
+    const old=mToken;clearTrade();quote=null;quoteSig='';
+    try{if(old)await fetch(API+'/api/merchant/logout',{method:'POST',headers:{authorization:'Bearer '+old}});}catch(x){}
+    quoteCart();
+  });
+  async function restoreTrade(){
+    mToken=load('stoich-trade-token');
+    if(!mToken)return;
+    try{
+      const r=await fetch(API+'/api/merchant/me',{headers:{authorization:'Bearer '+mToken}});
+      const d=await r.json().catch(()=>({}));
+      if(r.ok&&d.merchant)setMerchant(d.merchant);else clearTrade();
+    }catch(x){}
+    if(hasItems())quoteCart();
+  }
+
   let lastH=0;function postHeight(){const h=Math.ceil($('app').getBoundingClientRect().height);if(Math.abs(h-lastH)<2)return;lastH=h;try{window.parent.postMessage({type:'STOICH_FRAME_HEIGHT',height:h},SHOP);}catch(e){}}
   if('ResizeObserver' in window)new ResizeObserver(postHeight).observe($('app'));
 
@@ -334,14 +458,19 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
         const out=document.createElement('output');out.textContent=item.quantity;
         qc.append(mk('\u2212',item.quantity-1,'Decrease '+nm),out,mk('+',item.quantity+1,'Increase '+nm),mk('Remove',0,'Remove '+nm,'rm'));
       }
-      mid.append(t,v,qc);
-      const p=document.createElement('div');p.className='p';p.textContent=money(item.final_line_price??item.line_price??0);
+      const ql=lineQuote(item),lineGross=Number(item.final_line_price??item.line_price??0);
+      if(ql&&ql.discount_cents>0){const off=document.createElement('div');off.className='off';off.textContent=ql.discount_percent+'% off';mid.append(t,v,off,qc);}
+      else mid.append(t,v,qc);
+      const p=document.createElement('div');p.className='p';
+      if(ql&&ql.discount_cents>0){const nowP=document.createElement('div');nowP.textContent=money(ql.final_line_cents);const was=document.createElement('span');was.className='was';was.textContent=money(lineGross);p.append(nowP,was);}
+      else p.textContent=money(lineGross);
       li.append(th,mid,p);list.appendChild(li);
     }
     $('totals').hidden=false;
     $('status').textContent='';
     if(retryTimer){clearInterval(retryTimer);retryTimer=null;}
     update();
+    if(cartSig()!==quoteSig)quoteCart();
   }
 
   /* ---------- edit the cart from inside the form ---------- */
@@ -361,13 +490,20 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
     if(e.data&&e.data.type==='STOICH_CART_ERROR'){cartBusy(false);cartError(String(e.data.message||'Could not update your cart.'));}
   });
   requestCart();
+  loadSale();
+  restoreTrade();
   retryTimer=setInterval(requestCart,1500);
   setTimeout(()=>{if(!cart){$('items').replaceChildren();$('status').innerHTML='We couldn’t load your cart. <button type="button" id="reload">Reload page</button>';const b=$('reload');if(b)b.addEventListener('click',()=>{try{window.top.location.reload();}catch(e){location.reload();}});}},8000);
 
   /* ---------- totals, steps, button ---------- */
   function update(){
     const f=radio('fulfillment');
-    const sub=hasItems()?Number(cart.total_price)||0:0;
+    const gross=hasItems()?(quote?Number(quote.gross_cents)||0:Number(cart.total_price)||0):0;
+    const disc=hasItems()&&quote?Number(quote.discount_cents)||0:0;
+    const sub=gross-disc;
+    $('grossRow').hidden=!disc;$('gross').textContent=money(gross);
+    $('saveRow').hidden=!disc;$('save').textContent='-'+money(disc);
+    $('saveLabel').textContent=disc&&quote&&Array.isArray(quote.applied)?quote.applied.map(a=>a.label).join(' · '):'';
     $('subtotal').textContent=money(sub);
     $('ship').textContent=!f?'Choose an option':f==='Guam store pickup'?'Free pickup':f==='Pickup box (24/7)'?'Free · code sent when ready':f==='Guam local delivery'?money(DELIVERY_FEE):'Quoted after review';
     $('total').textContent=money(sub+(f==='Guam local delivery'&&sub?DELIVERY_FEE:0));
@@ -422,17 +558,9 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
     const bad=keys.filter(k=>!validate(k));
     if(bad.length){const first=form.querySelector('[data-f="'+bad[0]+'"]');const inp=first&&first.querySelector('input,textarea');if(inp)inp.focus({preventScroll:true});if(first)first.scrollIntoView({behavior:'smooth',block:'center'});return;}
 
-    const items=cart.items.map(item=>({
-      product_id:String(item.product_id||''),
-      variant_id:String(item.variant_id||item.id||''),
-      handle:String(item.handle||''),
-      title:String(item.product_title||item.title||'Product'),
-      variant:String(item.variant_title&&item.variant_title!=='Default Title'?item.variant_title:''),
-      sku:String(item.sku||''),
-      quantity:Number(item.quantity),
-      unit_price_cents:Number(item.final_price??item.price??0)
-    }));
+    const items=cartItems();
     const payload={
+      merchant_token:mToken||undefined,
       customer:{name:$('name').value.trim(),email:$('email').value.trim(),phone:$('phone').value.trim(),contact_preference:radio('contact')},
       fulfillment_method:radio('fulfillment'),
       payment_method:radio('payment'),
@@ -448,7 +576,7 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
       ['name','email','phone'].forEach(k=>store('stoich-co-'+k,payload.customer[k]));store('stoich-co-contact',payload.customer.contact_preference);
       sent=true;mark('send',true);
       $('done-num').textContent='Request #'+data.order_number;
-      $('done-email').textContent='We emailed a copy to '+payload.customer.email+'.';
+      $('done-email').textContent='We emailed a copy to '+payload.customer.email+'.'+(Number(data.discount_cents)?' You saved '+money(data.discount_cents)+' on this order.':'');
       $('done-contact').textContent=payload.customer.contact_preference.toLowerCase();
       if(payload.payment_method==='Card (invoice link)')$('done-step2').textContent='We send you a secure card payment link by email'+(({'WhatsApp':' and WhatsApp','Text message':' and text'})[payload.customer.contact_preference]||'')+'.';
       else if(payload.payment_method==='Cash (in store)')$('done-step2').textContent='Bring cash when you pick up. We message you when it’s ready.';
