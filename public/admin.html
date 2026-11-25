@@ -179,6 +179,19 @@ main.app{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
 .mch .un{color:var(--muted);font:600 12px/1.4 ui-monospace,monospace}
 .mch .sub{color:var(--muted);font-size:12.5px;margin-top:4px}
 .mch .acts{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.rates{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.02)}
+.rh{margin-bottom:6px;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.rl{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--line);font-size:13.5px}
+.rl:first-of-type{border-top:0}
+.rl span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rl b{font:700 13px/1.4 ui-monospace,monospace;color:#ff9a85}
+.rl b.zero{color:var(--muted)}
+.xrate{width:24px;height:24px;flex:none;display:grid;place-items:center;border:1px solid var(--line2);border-radius:7px;background:transparent;color:var(--muted);cursor:pointer;line-height:1}
+.xrate:hover{border-color:#ff8a70;color:#ff8a70}
+.rateadd{display:grid;grid-template-columns:1.1fr 1.4fr 70px auto;gap:6px;margin-top:10px}
+.rateadd select,.rateadd input{min-height:36px;padding:6px 9px;border-radius:9px;font-size:13px}
+.pc.bonus{background:rgba(76,141,255,.16);color:var(--blue)}
+@media (max-width:620px){.rateadd{grid-template-columns:1fr 1fr}}
 .tradetag{display:inline-flex;align-items:center;margin:4px 0 0 6px;padding:2px 8px;border-radius:6px;background:rgba(167,123,255,.14);color:var(--purple);font:600 11px/1.6 ui-monospace,monospace;letter-spacing:.06em}
 .disctag{display:inline-flex;align-items:center;margin:4px 0 0 6px;padding:2px 8px;border-radius:6px;background:rgba(227,36,2,.16);color:#ff9a85;font:600 11px/1.6 ui-monospace,monospace;letter-spacing:.06em}
 .lab{display:block;margin:10px 0 5px;font:600 11px/1.3 ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#c9c9cf}
@@ -291,14 +304,14 @@ main.app{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
         </div>
         <div class="row2">
           <label><span class="lab">Contact name</span><input id="mName" placeholder="Jay Santos"></label>
-          <label><span class="lab">Trade discount %</span><input id="mPct" type="number" min="0" max="90" step="0.5" placeholder="15"></label>
+          <label><span class="lab">Catch-all rate %</span><input id="mPct" type="number" min="0" max="90" step="0.5" placeholder="0"></label>
         </div>
         <div class="row2">
           <label><span class="lab">Email</span><input id="mEmail" type="email" placeholder="jay@islanddetail.com"></label>
           <label><span class="lab">Phone</span><input id="mPhone" placeholder="671 555 0123"></label>
         </div>
         <span class="lab">Password (8+ characters)</span><input id="mPass" type="text" autocomplete="new-password" required>
-        <p class="muted" style="margin:8px 0 0;font-size:12.5px">Give this username and password to the merchant. They sign in on the checkout page to see their pricing. You can change it here at any time.</p>
+        <p class="muted" style="margin:8px 0 0;font-size:12.5px">Give this username and password to the merchant. They sign in on the checkout page to see their pricing. Once the account exists, add their per-brand rates to its rate card above — the catch-all only covers brands with no rate of their own.</p>
         <span class="lab">Internal notes</span><textarea id="mNotes" rows="2" placeholder="Terms, who approved the account, anything worth remembering"></textarea>
         <button class="btn white" style="margin-top:12px">Create trade account</button>
       </form>
@@ -327,7 +340,8 @@ main.app{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
 <script>
 const DELIVERY_FEE_CENTS={'Guam local delivery':1000};const feeOf=o=>DELIVERY_FEE_CENTS[o&&o.fulfillment_method]||0;
 // Orders placed before discounts existed have no gross figure, so fall back to what they were charged.
-const grossOf=o=>Number(o&&o.gross_cents||0)||Number(o&&o.subtotal_cents||0)+Number(o&&o.discount_cents||0);
+const grossOf=o=>Number(o&&o.gross_cents||0)||Number(o&&o.subtotal_cents||0)+Number(o&&o.discount_cents||0)+Number(o&&o.rent_credit_cents||0);
+const rentOf=o=>Number(o&&o.rent_credit_cents||0);
 const discOf=o=>Number(o&&o.discount_cents||0);
 const discLabels=o=>{try{return ((JSON.parse(o.discount_json||'[]'))||[]).map(a=>`${a.label} (${a.percent}%)`).join(' · ');}catch(e){return '';}};
 (()=>{
@@ -366,7 +380,7 @@ function render(){
   $('chips').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{view=b.dataset.v;render();});
   const q=$('search').value.trim().toLowerCase();
   const list=orders.filter(o=>(q?[o.order_number,o.customer_name,o.email,o.phone].some(v=>String(v||'').toLowerCase().includes(q)):inView(o)));
-  $('list').innerHTML=list.length?list.map(o=>{const items=(o.items||[]).reduce((s,i)=>s+(Number(i.quantity)||0),0);return `<button class="ord${selected&&selected.id===o.id?' is-sel':''}" data-id="${esc(o.id)}"><span class="num">#${o.order_number}</span><span class="who"><b>${esc(o.customer_name)}</b><span>${esc(o.phone)} · ${esc(o.contact_preference)}</span></span><span class="ful"><b style="font-weight:600">${esc(shortFul(o.fulfillment_method))}</b><span>${items} item${items===1?'':'s'} · ${ago(o.created_at)}</span>${o.box_code?`<span class="boxtag">BOX · ${esc(o.box_code)}</span>`:''}${payTag(o)}${o.merchant_company?`<span class="tradetag">TRADE · ${esc(o.merchant_company)}</span>`:''}${discOf(o)?`<span class="disctag">SAVED ${money(discOf(o))}</span>`:''}</span><span class="amt">${money(o.subtotal_cents)}</span><span class="st">${pill(o.status)}</span></button>`;}).join(''):`<div class="empty">${q?'No orders match that search.':'Nothing here right now.'}</div>`;
+  $('list').innerHTML=list.length?list.map(o=>{const items=(o.items||[]).reduce((s,i)=>s+(Number(i.quantity)||0),0);return `<button class="ord${selected&&selected.id===o.id?' is-sel':''}" data-id="${esc(o.id)}"><span class="num">#${o.order_number}</span><span class="who"><b>${esc(o.customer_name)}</b><span>${esc(o.phone)} · ${esc(o.contact_preference)}</span></span><span class="ful"><b style="font-weight:600">${esc(shortFul(o.fulfillment_method))}</b><span>${items} item${items===1?'':'s'} · ${ago(o.created_at)}</span>${o.box_code?`<span class="boxtag">BOX · ${esc(o.box_code)}</span>`:''}${payTag(o)}${o.merchant_company?`<span class="tradetag">TRADE · ${esc(o.merchant_company)}</span>`:''}${discOf(o)?`<span class="disctag">SAVED ${money(discOf(o))}</span>`:''}${rentOf(o)?`<span class="paytag card">RENT CREDIT ${money(rentOf(o))}</span>`:''}</span><span class="amt">${money(o.subtotal_cents)}</span><span class="st">${pill(o.status)}</span></button>`;}).join(''):`<div class="empty">${q?'No orders match that search.':'Nothing here right now.'}</div>`;
   $('list').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>openOrder(b.dataset.id));
 }
 document.querySelectorAll('.stat').forEach(b=>b.onclick=()=>{view=view===b.dataset.view?'open':b.dataset.view;render();});
@@ -421,7 +435,8 @@ function renderDetail(reset){
     <h3 class="mono muted">Items</h3>
     <ul class="items">${(o.items||[]).map(i=>`<li><span>${Number(i.quantity)} × ${esc(i.title)}${i.variant?`<small>${esc(i.variant)}${i.sku?' · '+esc(i.sku):''}</small>`:(i.sku?`<small>${esc(i.sku)}</small>`:'')}</span><b>${money(i.line_total_cents)}</b></li>`).join('')}</ul>
     ${discOf(o)?`<div class="tot" style="border-top:0;padding-top:4px;margin-top:0"><span>Items</span><span>${money(grossOf(o))}</span></div><div class="tot" style="border-top:0;padding-top:4px;margin-top:0;color:#ff9a85"><span>Discount${discLabels(o)?`<small style="display:block;color:var(--muted);font-weight:400">${esc(discLabels(o))}</small>`:''}</span><span>-${money(discOf(o))}</span></div>`:''}
-    <div class="tot"><span>Subtotal</span><span>${money(o.subtotal_cents)}</span></div>${feeOf(o)?`<div class="tot" style="border-top:0;padding-top:4px;margin-top:0"><span>Delivery</span><span>${money(feeOf(o))}</span></div><div class="tot" style="border-top:0;padding-top:4px;margin-top:0"><span>Total</span><span>${money(Number(o.subtotal_cents)+feeOf(o))}</span></div>`:''}
+    ${rentOf(o)?`<div class="tot" style="border-top:0;padding-top:4px;margin-top:0;color:var(--blue)"><span>Rent credit${o.rent_credit_note?`<small style="display:block;color:var(--muted);font-weight:400">${esc(o.rent_credit_note)}</small>`:''}</span><span>-${money(rentOf(o))}</span></div>`:''}
+    <div class="tot"><span>${rentOf(o)?'Amount due':'Subtotal'}</span><span>${money(o.subtotal_cents)}</span></div>${feeOf(o)?`<div class="tot" style="border-top:0;padding-top:4px;margin-top:0"><span>Delivery</span><span>${money(feeOf(o))}</span></div><div class="tot" style="border-top:0;padding-top:4px;margin-top:0"><span>Total</span><span>${money(Number(o.subtotal_cents)+feeOf(o))}</span></div>`:''}
   </section>
 
   <section class="sec linkcard">
@@ -476,6 +491,21 @@ function renderDetail(reset){
   </section>
 
   <section class="sec">
+    <h3 class="mono" style="color:var(--blue)">Rent credit <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">· comes off what they owe, not off the prices</span></h3>
+    <form id="rentForm">
+      <div class="row2">
+        <label><span class="lab">Credit to apply ($)</span><input id="rentAmt" type="number" min="0" step="0.01" placeholder="${(rentOf(o)/100).toFixed(2)}"></label>
+        <label><span class="lab">What it is for</span><input id="rentWhy" value="${esc(o.rent_credit_note||'')}" placeholder="November rent credit"></label>
+      </div>
+      <div class="row2" style="margin-top:12px;grid-template-columns:1fr auto">
+        <button class="btn white" type="submit">Apply rent credit</button>
+        ${rentOf(o)?'<button class="btn ghost" type="button" id="rentClear">Remove credit</button>':''}
+      </div>
+      <p class="muted" style="margin:10px 0 0;font-size:12.5px">${rentOf(o)?`${money(rentOf(o))} is on this order. `:''}The prices stay as they are and the credit is shown separately on the payment email. Amount due after it: ${money(o.subtotal_cents)}.</p>
+    </form>
+  </section>
+
+  <section class="sec">
     <h3 class="mono muted">Internal notes</h3>
     <textarea id="notes" placeholder="Only your team sees this">${esc(o.internal_notes||'')}</textarea>
     <button class="btn" id="notesSave" style="margin-top:10px">Save notes</button>
@@ -503,6 +533,14 @@ function renderDetail(reset){
     setDiscount(pct?{percent:pct,reason:$('discWhy').value}:{amount:amt,reason:$('discWhy').value});
   };
   if($('discClear'))$('discClear').onclick=()=>setDiscount({amount:0,reason:$('discWhy').value||'Discount removed'});
+  const setRent=async body=>{try{const d=await api('/api/admin/orders/'+o.id+'/rent-credit',{method:'POST',body:JSON.stringify(body)});toast(d.rent_credit_cents?'Rent credit applied — '+money(d.subtotal_cents)+' now due':'Rent credit removed');await refresh();}catch(err){toast(err.message,true);}};
+  $('rentForm').onsubmit=e=>{
+    e.preventDefault();
+    const amt=$('rentAmt').value.trim();
+    if(amt==='')return toast('Enter the credit amount.',true);
+    setRent({amount:amt,note:$('rentWhy').value});
+  };
+  if($('rentClear'))$('rentClear').onclick=()=>setRent({amount:0,note:''});
 
   /* notes */
   $('notesSave').onclick=async()=>{try{await api('/api/admin/orders/'+o.id,{method:'PATCH',body:JSON.stringify({internal_notes:$('notes').value})});toast('Notes saved');await refresh();}catch(err){toast(err.message,true);}};
@@ -575,13 +613,51 @@ async function loadMerchants(){
  try{
   const d=await api('/api/admin/merchants');const list=d.merchants||[];
   $('mchList').classList.remove('muted');
-  $('mchList').innerHTML=list.length?list.map(m=>`<div class="mch"><div class="hd"><span class="co">${esc(m.company||m.username)}</span><span class="un">@${esc(m.username)}</span>${Number(m.active)?'':'<span class="offtag">OFF</span>'}${Number(m.discount_percent)?`<span class="pc">${Number(m.discount_percent)}%</span>`:''}</div><div class="sub">${esc(m.contact_name||'No contact name')}${m.email?' · '+esc(m.email):''}${m.phone?' · '+esc(m.phone):''}</div><div class="sub">${m.orders||0} order${(m.orders||0)===1?'':'s'} · ${money(m.spent_cents||0)} · ${m.last_login_at?'last signed in '+ago(m.last_login_at):'never signed in'}</div>${m.notes?`<div class="sub">${esc(m.notes)}</div>`:''}<div class="acts"><button class="btn sm" data-pct="${esc(m.id)}" data-cur="${Number(m.discount_percent)||0}">Change discount</button><button class="btn sm" data-pw="${esc(m.id)}">New password</button><button class="btn sm" data-act="${esc(m.id)}" data-en="${Number(m.active)?0:1}">${Number(m.active)?'Turn off':'Turn on'}</button><button class="btn sm danger" data-rm="${esc(m.id)}" data-co="${esc(m.company||m.username)}">Delete</button></div></div>`).join(''):'<p class="muted">No trade accounts yet. Create one below and give the merchant their username and password.</p>';
-  const patch=async(id,body,msg)=>{try{await api('/api/admin/merchants/'+id,{method:'PATCH',body:JSON.stringify(body)});loadMerchants();toast(msg);}catch(e){toast(e.message,true);}};
-  $('mchList').querySelectorAll('[data-pct]').forEach(b=>b.onclick=()=>{const v=prompt('Trade discount percent for this account (0 for none):',b.dataset.cur);if(v===null)return;patch(b.dataset.pct,{discount_percent:v},'Discount updated');});
-  $('mchList').querySelectorAll('[data-pw]').forEach(b=>b.onclick=()=>{const v=prompt('New password (8+ characters). Give it to the merchant — it signs them out everywhere else.');if(v===null)return;patch(b.dataset.pw,{password:v},'Password changed');});
-  $('mchList').querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>patch(b.dataset.act,{active:b.dataset.en==='1'},'Account updated'));
-  $('mchList').querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{if(!confirm(`Delete the trade account for ${b.dataset.co}? Past orders keep the company name. This cannot be undone.`))return;try{await api('/api/admin/merchants/'+b.dataset.rm,{method:'DELETE'});loadMerchants();toast('Trade account deleted');}catch(e){toast(e.message,true);}});
+  $('mchList').innerHTML=list.length?list.map(mchCard).join(''):'<p class="muted">No trade accounts yet. Create one below and give the merchant their username and password.</p>';
+  wireMerchants();
  }catch(e){$('mchList').textContent=e.message;}
+}
+function rateLine(m,r){
+ const what=r.scope==='all'?'Everything else':`${SCOPE_LABEL[r.scope]||r.scope}: ${r.match_value}`;
+ return `<div class="rl"><span>${esc(what)}</span><b class="${Number(r.percent)?'':'zero'}">${Number(r.percent)}%</b><button class="xrate" data-rmrate="${esc(r.id)}" data-m="${esc(m.id)}" title="Remove this rate" aria-label="Remove rate">×</button></div>`;
+}
+function mchCard(m){
+ const rates=(m.rates||[]).slice().sort((x,y)=>String(x.match_value||'').localeCompare(String(y.match_value||'')));
+ const base=Number(m.discount_percent)||0,bonus=Number(m.bonus_percent)||0;
+ return `<div class="mch">
+  <div class="hd"><span class="co">${esc(m.company||m.username)}</span><span class="un">@${esc(m.username)}</span>${Number(m.active)?'':'<span class="offtag">OFF</span>'}${base?`<span class="pc">${base}% catch-all</span>`:''}${bonus?`<span class="pc bonus">+${bonus}% on top</span>`:''}</div>
+  <div class="sub">${esc(m.contact_name||'No contact name')}${m.email?' · '+esc(m.email):''}${m.phone?' · '+esc(m.phone):''}</div>
+  <div class="sub">${m.orders||0} order${(m.orders||0)===1?'':'s'} · ${money(m.spent_cents||0)} · ${m.last_login_at?'last signed in '+ago(m.last_login_at):'never signed in'}</div>
+  ${m.notes?`<div class="sub">${esc(m.notes)}</div>`:''}
+  <div class="rates">
+   <div class="rh mono muted">Rate card${bonus?` · then +${bonus}% on top of each`:''}</div>
+   ${rates.length?rates.map(r=>rateLine(m,r)).join(''):`<p class="muted" style="margin:4px 0;font-size:12.5px">No brand rates yet${base?` — everything is ${base}% off.`:' — this account pays list price.'}</p>`}
+   <form class="rateadd" data-addrate="${esc(m.id)}">
+    <select name="scope" aria-label="What the rate applies to"><option value="vendor">Brand</option><option value="product_type">Product type</option><option value="tag">Tag</option><option value="handle">One product</option><option value="all">Everything else</option></select>
+    <input name="val" placeholder="Koch-Chemie" aria-label="Brand, type, tag or product handle">
+    <input name="pct" type="number" min="0" max="90" step="0.5" placeholder="%" aria-label="Percent off">
+    <button class="btn sm white" type="submit">Add</button>
+   </form>
+  </div>
+  <div class="acts"><button class="btn sm" data-pct="${esc(m.id)}" data-cur="${base}">Catch-all rate</button><button class="btn sm" data-bonus="${esc(m.id)}" data-cur="${bonus}">Extra on top</button><button class="btn sm" data-pw="${esc(m.id)}">New password</button><button class="btn sm" data-act="${esc(m.id)}" data-en="${Number(m.active)?0:1}">${Number(m.active)?'Turn off':'Turn on'}</button><button class="btn sm danger" data-rm="${esc(m.id)}" data-co="${esc(m.company||m.username)}">Delete</button></div>
+ </div>`;
+}
+function wireMerchants(){
+ const root=$('mchList');
+ const patch=async(id,body,msg)=>{try{await api('/api/admin/merchants/'+id,{method:'PATCH',body:JSON.stringify(body)});loadMerchants();toast(msg);}catch(e){toast(e.message,true);}};
+ root.querySelectorAll('[data-pct]').forEach(b=>b.onclick=()=>{const v=prompt('Percent off anything this account has no brand rate for. 0 means they pay list price.',b.dataset.cur);if(v===null)return;patch(b.dataset.pct,{discount_percent:v},'Catch-all rate updated');});
+ root.querySelectorAll('[data-bonus]').forEach(b=>b.onclick=()=>{const v=prompt('Extra percent on top of every rate on this account.\n\n20% with 5% on top comes to 24% off, not 25% — the 5% comes off the already-discounted price.\n\n0 for none.',b.dataset.cur);if(v===null)return;patch(b.dataset.bonus,{bonus_percent:v},'Extra percentage updated');});
+ root.querySelectorAll('[data-pw]').forEach(b=>b.onclick=()=>{const v=prompt('New password (8+ characters). Give it to the merchant — it signs them out everywhere else.');if(v===null)return;patch(b.dataset.pw,{password:v},'Password changed');});
+ root.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>patch(b.dataset.act,{active:b.dataset.en==='1'},'Account updated'));
+ root.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{if(!confirm(`Delete the trade account for ${b.dataset.co}? Past orders keep the company name. This cannot be undone.`))return;try{await api('/api/admin/merchants/'+b.dataset.rm,{method:'DELETE'});loadMerchants();toast('Trade account deleted');}catch(e){toast(e.message,true);}});
+ root.querySelectorAll('[data-rmrate]').forEach(b=>b.onclick=async()=>{try{await api('/api/admin/merchants/'+b.dataset.m+'/rates/'+b.dataset.rmrate,{method:'DELETE'});loadMerchants();toast('Rate removed');}catch(e){toast(e.message,true);}});
+ root.querySelectorAll('[data-addrate]').forEach(f=>f.onsubmit=async e=>{
+  e.preventDefault();
+  const scope=f.elements.scope.value,val=f.elements.val.value,pct=f.elements.pct.value;
+  if(String(pct).trim()==='')return toast('Enter a percentage. Use 0 for a brand they get nothing off.',true);
+  try{await api('/api/admin/merchants/'+f.dataset.addrate+'/rates',{method:'POST',body:JSON.stringify({scope,match_value:val,percent:pct})});loadMerchants();toast('Rate saved');}
+  catch(err){toast(err.message,true);}
+ });
 }
 $('mchForm').onsubmit=async e=>{
  e.preventDefault();
