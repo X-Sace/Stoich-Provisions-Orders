@@ -35,7 +35,8 @@ a{color:inherit}
 .btn.ghost{background:transparent}
 .btn.sm{min-height:34px;padding:0 12px;font-size:13px}
 .btn.danger{background:transparent;border-color:rgba(255,90,60,.5);color:#ff8a70}
-input[type=text],input[type=password],input[type=email],input[type=number],input[type=search],input[type=url],select,textarea{width:100%;min-height:44px;padding:10px 12px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;outline:none}
+input[type=text],input[type=password],input[type=email],input[type=number],input[type=search],input[type=url],input[type=date],input:not([type]),select,textarea{width:100%;min-height:44px;padding:10px 12px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;outline:none}
+input[type=date]{color-scheme:dark}
 input:focus,select:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227,36,2,.18)}
 textarea{min-height:84px;resize:vertical}
 label.l{display:block;margin:12px 0 6px;color:#c9c9cf}
@@ -162,6 +163,27 @@ main.app{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
   .quick{grid-template-columns:repeat(4,1fr)}
   .kv{grid-template-columns:90px 1fr}
 }
+.rule{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.rule:first-child{border-top:0}
+.rule .nm{font-weight:600;font-size:14px}
+.rule .sub{color:var(--muted);font-size:12.5px;margin-top:3px}
+.rule .acts{display:flex;gap:6px;align-items:center}
+.pc{display:inline-flex;align-items:center;justify-content:center;min-width:52px;padding:5px 9px;border-radius:8px;background:rgba(227,36,2,.16);color:#ff9a85;font:700 13px/1.4 ui-monospace,monospace}
+.pc.off{background:rgba(255,255,255,.06);color:var(--muted)}
+.livetag{display:inline-flex;margin-left:6px;padding:2px 7px;border-radius:6px;background:rgba(47,191,113,.14);color:var(--ok);font:600 10px/1.7 ui-monospace,monospace;letter-spacing:.07em}
+.offtag{display:inline-flex;margin-left:6px;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.07);color:var(--muted);font:600 10px/1.7 ui-monospace,monospace;letter-spacing:.07em}
+.mch{padding:12px 0;border-top:1px solid var(--line)}
+.mch:first-child{border-top:0}
+.mch .hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mch .co{font-weight:600;font-size:14px}
+.mch .un{color:var(--muted);font:600 12px/1.4 ui-monospace,monospace}
+.mch .sub{color:var(--muted);font-size:12.5px;margin-top:4px}
+.mch .acts{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.tradetag{display:inline-flex;align-items:center;margin:4px 0 0 6px;padding:2px 8px;border-radius:6px;background:rgba(167,123,255,.14);color:var(--purple);font:600 11px/1.6 ui-monospace,monospace;letter-spacing:.06em}
+.disctag{display:inline-flex;align-items:center;margin:4px 0 0 6px;padding:2px 8px;border-radius:6px;background:rgba(227,36,2,.16);color:#ff9a85;font:600 11px/1.6 ui-monospace,monospace;letter-spacing:.06em}
+.lab{display:block;margin:10px 0 5px;font:600 11px/1.3 ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#c9c9cf}
+.lab:first-child{margin-top:0}
+@media (max-width:560px){.rule{grid-template-columns:1fr}.rule .acts{justify-content:flex-start}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -186,6 +208,8 @@ main.app{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
     <span class="sp"></span>
     <span class="live" title="Refreshes every minute"><i></i><span id="updated">Live</span></span>
     <button class="btn sm ghost" id="refreshBtn" title="Refresh">Refresh</button>
+    <button class="btn sm ghost" id="discountsBtn">Discounts</button>
+    <button class="btn sm ghost" id="merchantsBtn">Merchants</button>
     <button class="btn sm ghost" id="settingsBtn">Settings</button>
   </header>
   <main class="app">
@@ -222,6 +246,66 @@ main.app{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
   <div class="db" id="dBody"></div>
 </aside>
 
+<aside class="drawer" id="discounts" aria-modal="true" role="dialog" aria-labelledby="discTitle">
+  <div class="dh"><h2 id="discTitle">Discounts</h2><span class="sp"></span><button class="xbtn" data-close aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+  <div class="db">
+    <section class="sec">
+      <h3 class="mono muted">Black Friday</h3>
+      <p class="muted" style="margin:0 0 12px">Adds the four sale rules in one go: 30% off polishers, 20% off P&amp;S, 10% off Koch-Chemie, 10% off ceramic coatings. Leave the dates blank to start it right away.</p>
+      <div class="row2"><label><span class="lab">Starts</span><input id="bfStart" type="date"></label><label><span class="lab">Ends</span><input id="bfEnd" type="date"></label></div>
+      <button class="btn red" id="bfSeed" style="margin-top:12px">Add Black Friday rules</button>
+    </section>
+    <section class="sec">
+      <h3 class="mono muted">Live rules <span style="text-transform:none;letter-spacing:0;font-weight:400">· the biggest matching discount wins, they never stack</span></h3>
+      <div id="rules" class="muted">Loading…</div>
+    </section>
+    <section class="sec">
+      <h3 class="mono muted">Add a discount</h3>
+      <form id="ruleForm">
+        <span class="lab">Name customers will see</span><input id="rLabel" placeholder="Black Friday · 15% off wax" required>
+        <div class="row2">
+          <label><span class="lab">Applies to</span><select id="rScope"><option value="vendor">Brand (vendor)</option><option value="product_type">Product type</option><option value="tag">Product tag</option><option value="handle">One product (handle)</option><option value="all">Everything</option></select></label>
+          <label><span class="lab">Percent off</span><input id="rPct" type="number" min="1" max="90" step="0.5" placeholder="20" required></label>
+        </div>
+        <span class="lab" id="rMatchLab">Brand name</span><input id="rMatch" placeholder="P&amp;S">
+        <div class="row2"><label><span class="lab">Starts (optional)</span><input id="rStart" type="date"></label><label><span class="lab">Ends (optional)</span><input id="rEnd" type="date"></label></div>
+        <button class="btn white" style="margin-top:12px">Add discount</button>
+      </form>
+    </section>
+  </div>
+</aside>
+
+<aside class="drawer" id="merchants" aria-modal="true" role="dialog" aria-labelledby="mTitle">
+  <div class="dh"><h2 id="mTitle">Merchants</h2><span class="sp"></span><button class="xbtn" data-close aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+  <div class="db">
+    <section class="sec">
+      <h3 class="mono muted">Trade accounts</h3>
+      <div id="mchList" class="muted">Loading…</div>
+    </section>
+    <section class="sec">
+      <h3 class="mono muted">Add a trade account</h3>
+      <form id="mchForm">
+        <div class="row2">
+          <label><span class="lab">Company</span><input id="mCompany" placeholder="Island Detail Co" required></label>
+          <label><span class="lab">Username</span><input id="mUser" placeholder="islanddetail" autocapitalize="none" spellcheck="false" required></label>
+        </div>
+        <div class="row2">
+          <label><span class="lab">Contact name</span><input id="mName" placeholder="Jay Santos"></label>
+          <label><span class="lab">Trade discount %</span><input id="mPct" type="number" min="0" max="90" step="0.5" placeholder="15"></label>
+        </div>
+        <div class="row2">
+          <label><span class="lab">Email</span><input id="mEmail" type="email" placeholder="jay@islanddetail.com"></label>
+          <label><span class="lab">Phone</span><input id="mPhone" placeholder="671 555 0123"></label>
+        </div>
+        <span class="lab">Password (8+ characters)</span><input id="mPass" type="text" autocomplete="new-password" required>
+        <p class="muted" style="margin:8px 0 0;font-size:12.5px">Give this username and password to the merchant. They sign in on the checkout page to see their pricing. You can change it here at any time.</p>
+        <span class="lab">Internal notes</span><textarea id="mNotes" rows="2" placeholder="Terms, who approved the account, anything worth remembering"></textarea>
+        <button class="btn white" style="margin-top:12px">Create trade account</button>
+      </form>
+    </section>
+  </div>
+</aside>
+
 <aside class="drawer" id="settings" aria-modal="true" role="dialog" aria-labelledby="sTitle">
   <div class="dh"><h2 id="sTitle">Settings</h2><span class="sp"></span><button class="xbtn" data-close aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
   <div class="db">
@@ -242,6 +326,10 @@ main.app{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
 
 <script>
 const DELIVERY_FEE_CENTS={'Guam local delivery':1000};const feeOf=o=>DELIVERY_FEE_CENTS[o&&o.fulfillment_method]||0;
+// Orders placed before discounts existed have no gross figure, so fall back to what they were charged.
+const grossOf=o=>Number(o&&o.gross_cents||0)||Number(o&&o.subtotal_cents||0)+Number(o&&o.discount_cents||0);
+const discOf=o=>Number(o&&o.discount_cents||0);
+const discLabels=o=>{try{return ((JSON.parse(o.discount_json||'[]'))||[]).map(a=>`${a.label} (${a.percent}%)`).join(' · ');}catch(e){return '';}};
 (()=>{
 const $=id=>document.getElementById(id);
 const LABELS={new:'New',confirmed:'Confirmed',processing:'Processing',awaiting_payment:'Awaiting payment',partially_paid:'Partially paid',paid:'Paid',ready_for_pickup:'Ready for pickup',out_for_delivery:'Out for delivery',shipped:'Shipped',on_hold:'On hold',completed:'Completed',cancelled:'Cancelled',refunded:'Refunded',payment_failed:'Payment failed'};
@@ -278,7 +366,7 @@ function render(){
   $('chips').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{view=b.dataset.v;render();});
   const q=$('search').value.trim().toLowerCase();
   const list=orders.filter(o=>(q?[o.order_number,o.customer_name,o.email,o.phone].some(v=>String(v||'').toLowerCase().includes(q)):inView(o)));
-  $('list').innerHTML=list.length?list.map(o=>{const items=(o.items||[]).reduce((s,i)=>s+(Number(i.quantity)||0),0);return `<button class="ord${selected&&selected.id===o.id?' is-sel':''}" data-id="${esc(o.id)}"><span class="num">#${o.order_number}</span><span class="who"><b>${esc(o.customer_name)}</b><span>${esc(o.phone)} · ${esc(o.contact_preference)}</span></span><span class="ful"><b style="font-weight:600">${esc(shortFul(o.fulfillment_method))}</b><span>${items} item${items===1?'':'s'} · ${ago(o.created_at)}</span>${o.box_code?`<span class="boxtag">BOX · ${esc(o.box_code)}</span>`:''}${payTag(o)}</span><span class="amt">${money(o.subtotal_cents)}</span><span class="st">${pill(o.status)}</span></button>`;}).join(''):`<div class="empty">${q?'No orders match that search.':'Nothing here right now.'}</div>`;
+  $('list').innerHTML=list.length?list.map(o=>{const items=(o.items||[]).reduce((s,i)=>s+(Number(i.quantity)||0),0);return `<button class="ord${selected&&selected.id===o.id?' is-sel':''}" data-id="${esc(o.id)}"><span class="num">#${o.order_number}</span><span class="who"><b>${esc(o.customer_name)}</b><span>${esc(o.phone)} · ${esc(o.contact_preference)}</span></span><span class="ful"><b style="font-weight:600">${esc(shortFul(o.fulfillment_method))}</b><span>${items} item${items===1?'':'s'} · ${ago(o.created_at)}</span>${o.box_code?`<span class="boxtag">BOX · ${esc(o.box_code)}</span>`:''}${payTag(o)}${o.merchant_company?`<span class="tradetag">TRADE · ${esc(o.merchant_company)}</span>`:''}${discOf(o)?`<span class="disctag">SAVED ${money(discOf(o))}</span>`:''}</span><span class="amt">${money(o.subtotal_cents)}</span><span class="st">${pill(o.status)}</span></button>`;}).join(''):`<div class="empty">${q?'No orders match that search.':'Nothing here right now.'}</div>`;
   $('list').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>openOrder(b.dataset.id));
 }
 document.querySelectorAll('.stat').forEach(b=>b.onclick=()=>{view=view===b.dataset.view?'open':b.dataset.view;render();});
@@ -287,10 +375,12 @@ $('refreshBtn').onclick=()=>refresh().then(()=>toast('Up to date')).catch(e=>toa
 
 /* ---------- drawers ---------- */
 function openDrawer(id){$(id).classList.add('is-on');$('scrim').classList.add('is-on');document.body.style.overflow='hidden';}
-function closeAll(){['drawer','settings'].forEach(id=>$(id).classList.remove('is-on'));$('scrim').classList.remove('is-on');document.body.style.overflow='';}
+function closeAll(){['drawer','settings','discounts','merchants'].forEach(id=>$(id).classList.remove('is-on'));$('scrim').classList.remove('is-on');document.body.style.overflow='';}
 $('scrim').onclick=closeAll;$('closeBtn').onclick=closeAll;document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeAll);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAll();});
 $('settingsBtn').onclick=()=>{openDrawer('settings');loadRecips();};
+$('discountsBtn').onclick=()=>{openDrawer('discounts');loadRules();};
+$('merchantsBtn').onclick=()=>{openDrawer('merchants');loadMerchants();};
 
 /* ---------- order detail ---------- */
 function openOrder(id){selected=orders.find(o=>o.id===id);if(!selected)return;renderDetail(true);openDrawer('drawer');render();}
@@ -330,6 +420,7 @@ function renderDetail(reset){
   <section class="sec">
     <h3 class="mono muted">Items</h3>
     <ul class="items">${(o.items||[]).map(i=>`<li><span>${Number(i.quantity)} × ${esc(i.title)}${i.variant?`<small>${esc(i.variant)}${i.sku?' · '+esc(i.sku):''}</small>`:(i.sku?`<small>${esc(i.sku)}</small>`:'')}</span><b>${money(i.line_total_cents)}</b></li>`).join('')}</ul>
+    ${discOf(o)?`<div class="tot" style="border-top:0;padding-top:4px;margin-top:0"><span>Items</span><span>${money(grossOf(o))}</span></div><div class="tot" style="border-top:0;padding-top:4px;margin-top:0;color:#ff9a85"><span>Discount${discLabels(o)?`<small style="display:block;color:var(--muted);font-weight:400">${esc(discLabels(o))}</small>`:''}</span><span>-${money(discOf(o))}</span></div>`:''}
     <div class="tot"><span>Subtotal</span><span>${money(o.subtotal_cents)}</span></div>${feeOf(o)?`<div class="tot" style="border-top:0;padding-top:4px;margin-top:0"><span>Delivery</span><span>${money(feeOf(o))}</span></div><div class="tot" style="border-top:0;padding-top:4px;margin-top:0"><span>Total</span><span>${money(Number(o.subtotal_cents)+feeOf(o))}</span></div>`:''}
   </section>
 
@@ -368,6 +459,23 @@ function renderDetail(reset){
   </section>
 
   <section class="sec">
+    <h3 class="mono muted">Discount <span style="text-transform:none;letter-spacing:0;font-weight:400">· replaces any discount on this order</span></h3>
+    ${o.merchant_company?`<p class="muted" style="margin:0 0 10px">Trade account: <b>${esc(o.merchant_company)}</b></p>`:''}
+    <form id="discForm">
+      <div class="row2">
+        <label><span class="lab">Percent off</span><input id="discPct" type="number" min="0" max="90" step="0.5" placeholder="${discOf(o)&&grossOf(o)?String(Math.round(discOf(o)/grossOf(o)*1000)/10):'10'}"></label>
+        <label><span class="lab">Or amount off ($)</span><input id="discAmt" type="number" min="0" step="0.01" placeholder="${(discOf(o)/100).toFixed(2)}"></label>
+      </div>
+      <span class="lab">Reason (shows in the order notes)</span><input id="discWhy" placeholder="Black Friday goodwill, damaged box, price match">
+      <div class="row2" style="margin-top:12px;grid-template-columns:1fr auto">
+        <button class="btn white" type="submit">Apply discount</button>
+        ${discOf(o)?'<button class="btn ghost" type="button" id="discClear">Remove discount</button>':''}
+      </div>
+      <p class="muted" style="margin:10px 0 0;font-size:12.5px">Items total is ${money(grossOf(o))}. Payment links and balances follow the new subtotal, so set this before sending a payment link.</p>
+    </form>
+  </section>
+
+  <section class="sec">
     <h3 class="mono muted">Internal notes</h3>
     <textarea id="notes" placeholder="Only your team sees this">${esc(o.internal_notes||'')}</textarea>
     <button class="btn" id="notesSave" style="margin-top:10px">Save notes</button>
@@ -386,6 +494,15 @@ function renderDetail(reset){
   const setStatus=async s=>{if(s===o.status)return;try{await api('/api/admin/orders/'+o.id,{method:'PATCH',body:JSON.stringify({status:s})});toast('Marked '+LABELS[s]+' · customer emailed');await refresh();}catch(err){toast(err.message,true);}};
   $('flow').querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>setStatus(b.dataset.s));
   $('statusSave').onclick=()=>setStatus($('statusSel').value);
+  // Percent wins when both boxes are filled in, since that is what the form reads top to bottom.
+  const setDiscount=async body=>{try{const d=await api('/api/admin/orders/'+o.id+'/discount',{method:'POST',body:JSON.stringify(body)});toast(d.discount_cents?'Discount applied — order is now '+money(d.subtotal_cents):'Discount removed');await refresh();}catch(err){toast(err.message,true);}};
+  $('discForm').onsubmit=e=>{
+    e.preventDefault();
+    const pct=$('discPct').value.trim(),amt=$('discAmt').value.trim();
+    if(!pct&&!amt)return toast('Enter a percentage or an amount.',true);
+    setDiscount(pct?{percent:pct,reason:$('discWhy').value}:{amount:amt,reason:$('discWhy').value});
+  };
+  if($('discClear'))$('discClear').onclick=()=>setDiscount({amount:0,reason:$('discWhy').value||'Discount removed'});
 
   /* notes */
   $('notesSave').onclick=async()=>{try{await api('/api/admin/orders/'+o.id,{method:'PATCH',body:JSON.stringify({internal_notes:$('notes').value})});toast('Notes saved');await refresh();}catch(err){toast(err.message,true);}};
@@ -421,6 +538,59 @@ async function loadPayments(o){try{const d=await api('/api/admin/orders/'+o.id+'
 /* ---------- settings: recipients ---------- */
 async function loadRecips(){try{const d=await api('/api/admin/recipients');$('recips').classList.remove('muted');$('recips').innerHTML=(d.recipients||[]).map(r=>`<div class="recip"><span>${esc(r.email)}${r.enabled?'':' <span class="muted">(off)</span>'}</span><button class="btn sm" data-id="${r.id}" data-en="${r.enabled?0:1}">${r.enabled?'Turn off':'Turn on'}</button></div>`).join('')||'<p class="muted">No recipients yet.</p>';$('recips').querySelectorAll('[data-id]').forEach(b=>b.onclick=async()=>{try{await api('/api/admin/recipients/'+b.dataset.id,{method:'PATCH',body:JSON.stringify({enabled:b.dataset.en==='1'})});loadRecips();toast('Updated');}catch(e){toast(e.message,true);}});}catch(e){$('recips').textContent=e.message;}}
 $('addRecip').onsubmit=async e=>{e.preventDefault();try{await api('/api/admin/recipients',{method:'POST',body:JSON.stringify({email:$('recipEmail').value})});$('recipEmail').value='';loadRecips();toast('Recipient added');}catch(err){toast(err.message,true);}};
+
+/* ---------- discounts ---------- */
+const SCOPE_LABEL={all:'Everything',vendor:'Brand',product_type:'Product type',tag:'Tag',handle:'Product'};
+const MATCH_LABEL={vendor:'Brand name',product_type:'Product type',tag:'Product tag',handle:'Product handle',all:'Not needed'};
+function scopeHint(r){return r.scope==='all'?'Everything in the catalog':`${SCOPE_LABEL[r.scope]||r.scope}: ${r.match_value}`;}
+function windowHint(r){const d=v=>v?new Date(v).toLocaleDateString([], {month:'short',day:'numeric'}):'';
+ if(!r.starts_at&&!r.ends_at)return 'No end date';
+ if(r.starts_at&&r.ends_at)return `${d(r.starts_at)} – ${d(r.ends_at)}`;
+ return r.starts_at?`From ${d(r.starts_at)}`:`Until ${d(r.ends_at)}`;}
+async function loadRules(){
+ try{
+  const d=await api('/api/admin/discounts');const rules=d.rules||[];
+  $('rules').classList.remove('muted');
+  $('rules').innerHTML=rules.length?rules.map(r=>`<div class="rule"><div><div class="nm">${esc(r.label)}${r.live?'<span class="livetag">LIVE</span>':Number(r.active)?'<span class="offtag">SCHEDULED</span>':'<span class="offtag">OFF</span>'}</div><div class="sub">${esc(scopeHint(r))} · ${esc(windowHint(r))}</div></div><div class="acts"><span class="pc${Number(r.active)?'':' off'}">${Number(r.percent)}%</span><button class="btn sm" data-tog="${esc(r.id)}" data-en="${Number(r.active)?0:1}">${Number(r.active)?'Turn off':'Turn on'}</button><button class="btn sm danger" data-del="${esc(r.id)}">Delete</button></div></div>`).join(''):'<p class="muted">No discounts yet. Add the Black Friday rules above, or create your own below.</p>';
+  $('rules').querySelectorAll('[data-tog]').forEach(b=>b.onclick=async()=>{try{await api('/api/admin/discounts/'+b.dataset.tog,{method:'PATCH',body:JSON.stringify({active:b.dataset.en==='1'})});loadRules();refresh().catch(()=>{});toast('Discount updated');}catch(e){toast(e.message,true);}});
+  $('rules').querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this discount? Orders already placed keep the price they were given.'))return;try{await api('/api/admin/discounts/'+b.dataset.del,{method:'DELETE'});loadRules();toast('Discount deleted');}catch(e){toast(e.message,true);}});
+ }catch(e){$('rules').textContent=e.message;}
+}
+$('rScope').onchange=()=>{const v=$('rScope').value;$('rMatchLab').textContent=MATCH_LABEL[v]||'Match';$('rMatch').disabled=v==='all';$('rMatch').placeholder=v==='vendor'?'P&S':v==='product_type'?'Polishers':v==='tag'?'black-friday':v==='handle'?'rupes-lhr15-mark-iii':'';};
+$('ruleForm').onsubmit=async e=>{
+ e.preventDefault();
+ try{
+  await api('/api/admin/discounts',{method:'POST',body:JSON.stringify({label:$('rLabel').value,scope:$('rScope').value,match_value:$('rMatch').value,percent:$('rPct').value,starts_at:$('rStart').value,ends_at:$('rEnd').value})});
+  ['rLabel','rMatch','rPct','rStart','rEnd'].forEach(i=>$(i).value='');
+  loadRules();toast('Discount added');
+ }catch(err){toast(err.message,true);}
+};
+$('bfSeed').onclick=async()=>{
+ try{const d=await api('/api/admin/discounts',{method:'POST',body:JSON.stringify({preset:'black_friday',starts_at:$('bfStart').value,ends_at:$('bfEnd').value})});loadRules();toast(d.message||'Black Friday rules added');}
+ catch(e){toast(e.message,true);}
+};
+
+/* ---------- merchants ---------- */
+async function loadMerchants(){
+ try{
+  const d=await api('/api/admin/merchants');const list=d.merchants||[];
+  $('mchList').classList.remove('muted');
+  $('mchList').innerHTML=list.length?list.map(m=>`<div class="mch"><div class="hd"><span class="co">${esc(m.company||m.username)}</span><span class="un">@${esc(m.username)}</span>${Number(m.active)?'':'<span class="offtag">OFF</span>'}${Number(m.discount_percent)?`<span class="pc">${Number(m.discount_percent)}%</span>`:''}</div><div class="sub">${esc(m.contact_name||'No contact name')}${m.email?' · '+esc(m.email):''}${m.phone?' · '+esc(m.phone):''}</div><div class="sub">${m.orders||0} order${(m.orders||0)===1?'':'s'} · ${money(m.spent_cents||0)} · ${m.last_login_at?'last signed in '+ago(m.last_login_at):'never signed in'}</div>${m.notes?`<div class="sub">${esc(m.notes)}</div>`:''}<div class="acts"><button class="btn sm" data-pct="${esc(m.id)}" data-cur="${Number(m.discount_percent)||0}">Change discount</button><button class="btn sm" data-pw="${esc(m.id)}">New password</button><button class="btn sm" data-act="${esc(m.id)}" data-en="${Number(m.active)?0:1}">${Number(m.active)?'Turn off':'Turn on'}</button><button class="btn sm danger" data-rm="${esc(m.id)}" data-co="${esc(m.company||m.username)}">Delete</button></div></div>`).join(''):'<p class="muted">No trade accounts yet. Create one below and give the merchant their username and password.</p>';
+  const patch=async(id,body,msg)=>{try{await api('/api/admin/merchants/'+id,{method:'PATCH',body:JSON.stringify(body)});loadMerchants();toast(msg);}catch(e){toast(e.message,true);}};
+  $('mchList').querySelectorAll('[data-pct]').forEach(b=>b.onclick=()=>{const v=prompt('Trade discount percent for this account (0 for none):',b.dataset.cur);if(v===null)return;patch(b.dataset.pct,{discount_percent:v},'Discount updated');});
+  $('mchList').querySelectorAll('[data-pw]').forEach(b=>b.onclick=()=>{const v=prompt('New password (8+ characters). Give it to the merchant — it signs them out everywhere else.');if(v===null)return;patch(b.dataset.pw,{password:v},'Password changed');});
+  $('mchList').querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>patch(b.dataset.act,{active:b.dataset.en==='1'},'Account updated'));
+  $('mchList').querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{if(!confirm(`Delete the trade account for ${b.dataset.co}? Past orders keep the company name. This cannot be undone.`))return;try{await api('/api/admin/merchants/'+b.dataset.rm,{method:'DELETE'});loadMerchants();toast('Trade account deleted');}catch(e){toast(e.message,true);}});
+ }catch(e){$('mchList').textContent=e.message;}
+}
+$('mchForm').onsubmit=async e=>{
+ e.preventDefault();
+ try{
+  await api('/api/admin/merchants',{method:'POST',body:JSON.stringify({company:$('mCompany').value,username:$('mUser').value,contact_name:$('mName').value,discount_percent:$('mPct').value,email:$('mEmail').value,phone:$('mPhone').value,password:$('mPass').value,notes:$('mNotes').value})});
+  ['mCompany','mUser','mName','mPct','mEmail','mPhone','mPass','mNotes'].forEach(i=>$(i).value='');
+  loadMerchants();toast('Trade account created');
+ }catch(err){toast(err.message,true);}
+};
 
 /* ---------- boot ---------- */
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&token)refresh().catch(()=>{});});
