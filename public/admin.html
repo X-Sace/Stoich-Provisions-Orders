@@ -292,11 +292,11 @@ main.app{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
   <div class="dh"><h2 id="mTitle">Merchants</h2><span class="sp"></span><button class="xbtn" data-close aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
   <div class="db">
     <section class="sec">
-      <h3 class="mono muted">Trade accounts</h3>
+      <h3 class="mono muted">Merchant accounts</h3>
       <div id="mchList" class="muted">Loading…</div>
     </section>
     <section class="sec">
-      <h3 class="mono muted">Add a trade account</h3>
+      <h3 class="mono muted">Add a merchant account</h3>
       <form id="mchForm">
         <div class="row2">
           <label><span class="lab">Company</span><input id="mCompany" placeholder="Island Detail Co" required></label>
@@ -313,7 +313,7 @@ main.app{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
         <span class="lab">Password (8+ characters)</span><input id="mPass" type="text" autocomplete="new-password" required>
         <p class="muted" style="margin:8px 0 0;font-size:12.5px">Give this username and password to the merchant. They sign in on the checkout page to see their pricing. Once the account exists, add their per-brand rates to its rate card above — the catch-all only covers brands with no rate of their own.</p>
         <span class="lab">Internal notes</span><textarea id="mNotes" rows="2" placeholder="Terms, who approved the account, anything worth remembering"></textarea>
-        <button class="btn white" style="margin-top:12px">Create trade account</button>
+        <button class="btn white" style="margin-top:12px">Create merchant account</button>
       </form>
     </section>
   </div>
@@ -360,7 +360,14 @@ function toast(t,err){const el=$('toast');el.textContent=t;el.className='toast i
 function digits(p){let d=String(p||'').replace(/\D/g,'');if(d.length===7)d='1671'+d;else if(d.length===10)d='1'+d;return d;}
 function payTag(o){if(o.payment_method==='Cash (in store)')return '<span class="paytag cash">CASH</span>';if(o.payment_method==='Card (invoice link)')return `<span class="paytag card">CARD${o.pay_link?' · LINK SENT':''}</span>`;return '';}
 function shortFul(f){return({'Guam store pickup':'Pickup · Harmon','Pickup box (24/7)':'Pickup box','Guam local delivery':'Guam delivery','Saipan delivery':'Saipan delivery'})[f]||f;}
-async function api(path,opts={}){const r=await fetch(path,{...opts,headers:{'content-type':'application/json',authorization:'Bearer '+token,...(opts.headers||{})}});const d=await r.json().catch(()=>({}));if(r.status===401){logout();throw Error('Session expired. Enter the admin token again.');}if(!r.ok)throw Error(d.error||'Request failed');return d;}
+async function api(path,opts={}){
+ const r=await fetch(path,{...opts,headers:{'content-type':'application/json',authorization:'Bearer '+token,...(opts.headers||{})}});
+ const text=await r.text();let d={};try{d=JSON.parse(text)}catch(e){}
+ if(r.status===401){logout();throw Error('Session expired. Enter the admin token again.');}
+ // Without this, anything that isn't our own JSON error reads as a bare "Request failed",
+ // which says nothing. Show the status and whatever the platform actually said.
+ if(!r.ok){const plain=String(text||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();throw Error(d.error||`${r.status}${r.statusText?' '+r.statusText:''}${plain?' — '+plain.slice(0,180):''}`);}
+ return d;}
 
 /* ---------- login ---------- */
 async function start(t,remember){token=t;try{await refresh(true);if(remember)store('stoich-admin-token',t);$('login').hidden=true;$('app').hidden=false;clearInterval(timer);timer=setInterval(()=>refresh().catch(()=>{}),60000);}catch(e){token='';$('loginErr').textContent=e.message;$('login').hidden=false;$('app').hidden=true;}}
@@ -380,7 +387,7 @@ function render(){
   $('chips').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{view=b.dataset.v;render();});
   const q=$('search').value.trim().toLowerCase();
   const list=orders.filter(o=>(q?[o.order_number,o.customer_name,o.email,o.phone].some(v=>String(v||'').toLowerCase().includes(q)):inView(o)));
-  $('list').innerHTML=list.length?list.map(o=>{const items=(o.items||[]).reduce((s,i)=>s+(Number(i.quantity)||0),0);return `<button class="ord${selected&&selected.id===o.id?' is-sel':''}" data-id="${esc(o.id)}"><span class="num">#${o.order_number}</span><span class="who"><b>${esc(o.customer_name)}</b><span>${esc(o.phone)} · ${esc(o.contact_preference)}</span></span><span class="ful"><b style="font-weight:600">${esc(shortFul(o.fulfillment_method))}</b><span>${items} item${items===1?'':'s'} · ${ago(o.created_at)}</span>${o.box_code?`<span class="boxtag">BOX · ${esc(o.box_code)}</span>`:''}${payTag(o)}${o.merchant_company?`<span class="tradetag">TRADE · ${esc(o.merchant_company)}</span>`:''}${discOf(o)?`<span class="disctag">SAVED ${money(discOf(o))}</span>`:''}${rentOf(o)?`<span class="paytag card">RENT CREDIT ${money(rentOf(o))}</span>`:''}</span><span class="amt">${money(o.subtotal_cents)}</span><span class="st">${pill(o.status)}</span></button>`;}).join(''):`<div class="empty">${q?'No orders match that search.':'Nothing here right now.'}</div>`;
+  $('list').innerHTML=list.length?list.map(o=>{const items=(o.items||[]).reduce((s,i)=>s+(Number(i.quantity)||0),0);return `<button class="ord${selected&&selected.id===o.id?' is-sel':''}" data-id="${esc(o.id)}"><span class="num">#${o.order_number}</span><span class="who"><b>${esc(o.customer_name)}</b><span>${esc(o.phone)} · ${esc(o.contact_preference)}</span></span><span class="ful"><b style="font-weight:600">${esc(shortFul(o.fulfillment_method))}</b><span>${items} item${items===1?'':'s'} · ${ago(o.created_at)}</span>${o.box_code?`<span class="boxtag">BOX · ${esc(o.box_code)}</span>`:''}${payTag(o)}${o.merchant_company?`<span class="tradetag">MERCHANT · ${esc(o.merchant_company)}</span>`:''}${discOf(o)?`<span class="disctag">SAVED ${money(discOf(o))}</span>`:''}${rentOf(o)?`<span class="paytag card">RENT CREDIT ${money(rentOf(o))}</span>`:''}</span><span class="amt">${money(o.subtotal_cents)}</span><span class="st">${pill(o.status)}</span></button>`;}).join(''):`<div class="empty">${q?'No orders match that search.':'Nothing here right now.'}</div>`;
   $('list').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>openOrder(b.dataset.id));
 }
 document.querySelectorAll('.stat').forEach(b=>b.onclick=()=>{view=view===b.dataset.view?'open':b.dataset.view;render();});
@@ -475,7 +482,7 @@ function renderDetail(reset){
 
   <section class="sec">
     <h3 class="mono muted">Discount <span style="text-transform:none;letter-spacing:0;font-weight:400">· replaces any discount on this order</span></h3>
-    ${o.merchant_company?`<p class="muted" style="margin:0 0 10px">Trade account: <b>${esc(o.merchant_company)}</b></p>`:''}
+    ${o.merchant_company?`<p class="muted" style="margin:0 0 10px">Merchant: <b>${esc(o.merchant_company)}</b></p>`:''}
     <form id="discForm">
       <div class="row2">
         <label><span class="lab">Percent off</span><input id="discPct" type="number" min="0" max="90" step="0.5" placeholder="${discOf(o)&&grossOf(o)?String(Math.round(discOf(o)/grossOf(o)*1000)/10):'10'}"></label>
@@ -613,7 +620,7 @@ async function loadMerchants(){
  try{
   const d=await api('/api/admin/merchants');const list=d.merchants||[];
   $('mchList').classList.remove('muted');
-  $('mchList').innerHTML=list.length?list.map(mchCard).join(''):'<p class="muted">No trade accounts yet. Create one below and give the merchant their username and password.</p>';
+  $('mchList').innerHTML=list.length?list.map(mchCard).join(''):'<p class="muted">No merchant accounts yet. Create one below and give the merchant their username and password.</p>';
   wireMerchants();
  }catch(e){$('mchList').textContent=e.message;}
 }
@@ -649,7 +656,7 @@ function wireMerchants(){
  root.querySelectorAll('[data-bonus]').forEach(b=>b.onclick=()=>{const v=prompt('Extra percent on top of every rate on this account.\n\n20% with 5% on top comes to 24% off, not 25% — the 5% comes off the already-discounted price.\n\n0 for none.',b.dataset.cur);if(v===null)return;patch(b.dataset.bonus,{bonus_percent:v},'Extra percentage updated');});
  root.querySelectorAll('[data-pw]').forEach(b=>b.onclick=()=>{const v=prompt('New password (8+ characters). Give it to the merchant — it signs them out everywhere else.');if(v===null)return;patch(b.dataset.pw,{password:v},'Password changed');});
  root.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>patch(b.dataset.act,{active:b.dataset.en==='1'},'Account updated'));
- root.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{if(!confirm(`Delete the trade account for ${b.dataset.co}? Past orders keep the company name. This cannot be undone.`))return;try{await api('/api/admin/merchants/'+b.dataset.rm,{method:'DELETE'});loadMerchants();toast('Trade account deleted');}catch(e){toast(e.message,true);}});
+ root.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{if(!confirm(`Delete the merchant account for ${b.dataset.co}? Past orders keep the company name. This cannot be undone.`))return;try{await api('/api/admin/merchants/'+b.dataset.rm,{method:'DELETE'});loadMerchants();toast('Merchant account deleted');}catch(e){toast(e.message,true);}});
  root.querySelectorAll('[data-rmrate]').forEach(b=>b.onclick=async()=>{try{await api('/api/admin/merchants/'+b.dataset.m+'/rates/'+b.dataset.rmrate,{method:'DELETE'});loadMerchants();toast('Rate removed');}catch(e){toast(e.message,true);}});
  root.querySelectorAll('[data-addrate]').forEach(f=>f.onsubmit=async e=>{
   e.preventDefault();
@@ -664,7 +671,7 @@ $('mchForm').onsubmit=async e=>{
  try{
   await api('/api/admin/merchants',{method:'POST',body:JSON.stringify({company:$('mCompany').value,username:$('mUser').value,contact_name:$('mName').value,discount_percent:$('mPct').value,email:$('mEmail').value,phone:$('mPhone').value,password:$('mPass').value,notes:$('mNotes').value})});
   ['mCompany','mUser','mName','mPct','mEmail','mPhone','mPass','mNotes'].forEach(i=>$(i).value='');
-  loadMerchants();toast('Trade account created');
+  loadMerchants();toast('Merchant account created');
  }catch(err){toast(err.message,true);}
 };
 
