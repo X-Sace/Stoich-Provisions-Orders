@@ -387,7 +387,8 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
     $('tradeHint').textContent=on?'Your trade pricing is applied to this order.':'Detailer or reseller with an account? Sign in to see your pricing on this order.';
     if(on){
       $('tradeCo').textContent=merchant.company||merchant.username;
-      $('tradePct').textContent=Number(merchant.discount_percent)?Number(merchant.discount_percent)+'% trade discount':'Account pricing';
+      const tb=Number(merchant.discount_percent)||0,tx=Number(merchant.bonus_percent)||0;
+      $('tradePct').textContent=tx?'Your rates, +'+tx+'% on top':tb?tb+'% trade discount':'Your trade pricing';
     }
     postHeight();
   }

@@ -21,7 +21,9 @@ CREATE TABLE IF NOT EXISTS orders (
   discount_cents INTEGER NOT NULL DEFAULT 0,
   discount_json TEXT NOT NULL DEFAULT '[]',
   merchant_id TEXT NOT NULL DEFAULT '',
-  merchant_company TEXT NOT NULL DEFAULT ''
+  merchant_company TEXT NOT NULL DEFAULT '',
+  rent_credit_cents INTEGER NOT NULL DEFAULT 0,
+  rent_credit_note TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS notification_emails (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,6 +69,7 @@ CREATE TABLE IF NOT EXISTS merchants (
   password_salt TEXT NOT NULL DEFAULT '',
   password_iterations INTEGER NOT NULL DEFAULT 120000,
   discount_percent REAL NOT NULL DEFAULT 0,
+  bonus_percent REAL NOT NULL DEFAULT 0,
   active INTEGER NOT NULL DEFAULT 1,
   notes TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL,
@@ -79,3 +82,12 @@ CREATE TABLE IF NOT EXISTS merchant_sessions (
   expires_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_merchant_sessions_m ON merchant_sessions(merchant_id);
+CREATE TABLE IF NOT EXISTS merchant_rates (
+  id TEXT PRIMARY KEY,
+  merchant_id TEXT NOT NULL,
+  scope TEXT NOT NULL DEFAULT 'vendor',
+  match_value TEXT NOT NULL DEFAULT '',
+  percent REAL NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_merchant_rates_m ON merchant_rates(merchant_id);
