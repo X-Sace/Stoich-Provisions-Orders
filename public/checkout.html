@@ -262,7 +262,7 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
 
     <div class="side">
     <section class="card trade" id="tradeCard">
-      <h2>Trade account</h2>
+      <h2>Merchant account</h2>
       <p class="hint" id="tradeHint" style="margin-bottom:12px">Detailer or reseller with an account? Sign in to see your pricing on this order.</p>
       <div id="tradeSignedOut">
         <form id="tradeForm">
@@ -276,7 +276,7 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
       </div>
       <div id="tradeSignedIn" hidden>
         <p class="twho"><b id="tradeCo">—</b><span class="pct" id="tradePct"></span></p>
-        <button type="button" class="tlink" id="tradeOutBtn">Sign out of trade account</button>
+        <button type="button" class="tlink" id="tradeOutBtn">Sign out</button>
       </div>
     </section>
     <aside class="summary card" id="summary" aria-label="Order summary">
@@ -380,15 +380,15 @@ input:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227
     }catch(e){}
   }
 
-  /* ---------- trade accounts ---------- */
+  /* ---------- merchant accounts ---------- */
   function setMerchant(m){
     merchant=m||null;const on=!!merchant;
     $('tradeSignedOut').hidden=on;$('tradeSignedIn').hidden=!on;
-    $('tradeHint').textContent=on?'Your trade pricing is applied to this order.':'Detailer or reseller with an account? Sign in to see your pricing on this order.';
+    $('tradeHint').textContent=on?'Your merchant pricing is applied to this order.':'Detailer or reseller with an account? Sign in to see your pricing on this order.';
     if(on){
       $('tradeCo').textContent=merchant.company||merchant.username;
       const tb=Number(merchant.discount_percent)||0,tx=Number(merchant.bonus_percent)||0;
-      $('tradePct').textContent=tx?'Your rates, +'+tx+'% on top':tb?tb+'% trade discount':'Your trade pricing';
+      $('tradePct').textContent=tx?'Your rates, +'+tx+'% on top':tb?tb+'% merchant discount':'Your account pricing';
     }
     postHeight();
   }

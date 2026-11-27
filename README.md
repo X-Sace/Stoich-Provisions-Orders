@@ -51,10 +51,10 @@ The checkout page asks the Worker for a quote rather than pricing the cart itsel
 
 To put a one-off discount on a single order, open it in `/admin.html` and use the **Discount** box: a percentage or a dollar amount, plus a reason that goes into the order notes. It replaces any sale discount on that order and the new subtotal is what payment links and balances follow, so set it before sending a payment link.
 
-## Trade (merchant) accounts
-The **Merchants** drawer in `/admin.html` manages accounts for detailers and resellers: company, username, contact, email, phone, an optional trade discount percentage, and internal notes. Create the account there and give the merchant the username and password — they sign in from the **Trade account** panel on the checkout page.
+## Merchant accounts
+The **Merchants** drawer in `/admin.html` manages accounts for detailers and resellers: company, username, contact, email, phone, an optional catch-all discount percentage, and internal notes. Create the account there and give the merchant the username and password — they sign in from the **Merchant account** panel on the checkout page.
 
-A signed-in merchant sees their own pricing, and their order records the company so it shows as `TRADE · <company>` in the order list. Trade pricing does not stack with the sale: each line takes whichever is larger, so during Black Friday a 25% trade account still gets 30% off polishers.
+A signed-in merchant sees their own pricing, and their order records the company so it shows as `MERCHANT · <company>` in the order list. Merchant pricing does not stack with the sale: each line takes whichever is larger, so during Black Friday a 25% merchant account still gets 30% off polishers.
 
 ### Rate cards
 Every account has its own rate card, set on the account in the Merchants drawer. A rate is a percentage off one brand, product type, tag or single product, so a card might read Koch-Chemie 5%, P&S 20%, Gtechniq 0%, The Rag Company 5%. There is no shared default: each account is set up on its own.
@@ -66,4 +66,4 @@ The most specific rate wins — one product beats a tag, which beats a product t
 ### Rent credit
 Some merchants pay rent and want it set against an invoice. Open the order and use the **Rent credit** box: an amount and a note. It is not a discount — the goods keep their prices and the credit comes off what is owed, so it is recorded and shown on its own line, on the order and in the payment email. The amount due after it is the figure payment links and balances follow. There is no stored balance; you enter the credit per invoice.
 
-Passwords are stored as PBKDF2-SHA256 hashes with a per-account salt; session tokens are stored only as a hash and expire after 30 days. Changing a password or switching an account off signs that merchant out everywhere. Deleting an account leaves past orders and their company name untouched.
+Passwords are stored as PBKDF2-SHA256 hashes with a per-account salt and 25,000 rounds, which keeps a sign-in well inside a Worker's CPU budget; each account records the number of rounds its own hash was made with, so accounts created earlier keep working; session tokens are stored only as a hash and expire after 30 days. Changing a password or switching an account off signs that merchant out everywhere. Deleting an account leaves past orders and their company name untouched.
