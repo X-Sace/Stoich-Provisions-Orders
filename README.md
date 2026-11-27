@@ -63,6 +63,21 @@ The most specific rate wins — one product beats a tag, which beats a product t
 
 **Extra on top** adds a further percentage to every rate on the account, and it compounds rather than adding: 20% with 5% on top is 24% off, because the 5% comes off the already-discounted price. Leave it at 0 for accounts that do not have that arrangement.
 
+### Set discounts
+Each account shows the four standard rates as switches — Koch-Chemie (KCX) 5%, P&S 20%, Gtechniq 0%, The Rag Company (TRC) 5%. Click the ones an account gets, or **Give them all four**. Nothing needs typing; the rate card below the switches is for anything outside that set.
+
+Gtechniq sits in the set at 0% on purpose. Switching it on is how you record that an account gets nothing off that brand, which then overrides any catch-all rate on the account.
+
+### An extra percentage on one order
+Open a merchant's order and use the **Extra percentage** box. It applies on top of that account's own rates **for that order only**, and it replaces whatever standing extra the account carries — set 3% on an order for an account with a standing 5% and the order gets 3%, not 8%.
+
+It only touches products priced on the merchant's own rate. Anything that took the Black Friday price keeps it, so the sale is never discounted twice. The box tells you how many products on the order it will affect, and it refuses rather than doing nothing if that number is zero.
+
+Where a sale rule and a merchant's own rate come to the same percentage, the line is recorded as the merchant's rate. The price is identical either way, but it means an extra percentage still applies to that line.
+
+### Merchant invoices
+The order desk has a **Merchant invoices** tile and filter showing only orders placed on a merchant account, whatever their status.
+
 ### Rent credit
 Some merchants pay rent and want it set against an invoice. Open the order and use the **Rent credit** box: an amount and a note. It is not a discount — the goods keep their prices and the credit comes off what is owed, so it is recorded and shown on its own line, on the order and in the payment email. The amount due after it is the figure payment links and balances follow. There is no stored balance; you enter the credit per invoice.
 

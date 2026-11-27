@@ -179,6 +179,13 @@ main.app{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
 .mch .un{color:var(--muted);font:600 12px/1.4 ui-monospace,monospace}
 .mch .sub{color:var(--muted);font-size:12.5px;margin-top:4px}
 .mch .acts{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.stdset{display:flex;flex-wrap:wrap;gap:6px}
+.std{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border:1px solid var(--line2);border-radius:999px;background:rgba(255,255,255,.04);color:var(--muted);font-size:12.5px;cursor:pointer;transition:all .15s}
+.std:hover{border-color:#fff;color:#fff}
+.std b{font:700 12px/1 ui-monospace,monospace}
+.std.is-on{border-color:rgba(227,36,2,.6);background:rgba(227,36,2,.16);color:#fff}
+.std.is-on b{color:#ff9a85}
+.std.all{border-style:dashed}
 .rates{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.02)}
 .rh{margin-bottom:6px;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
 .rl{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--line);font-size:13.5px}
@@ -231,6 +238,7 @@ main.app{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
       <button class="stat" data-view="active"><span class="mono muted">In progress</span><strong id="cActive">—</strong></button>
       <button class="stat" data-view="ready_for_pickup"><span class="mono muted">Ready / in box</span><strong id="cReady">—</strong></button>
       <button class="stat" data-view="completed"><span class="mono muted">Completed</span><strong id="cDone">—</strong></button>
+      <button class="stat" data-view="merchants"><span class="mono muted">Merchant invoices</span><strong id="cMerch">—</strong></button>
     </div>
     <div class="bar">
       <label class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span class="vh" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search</span><input id="search" type="search" placeholder="Search #, name, email or phone"></label>
@@ -342,6 +350,9 @@ const DELIVERY_FEE_CENTS={'Guam local delivery':1000};const feeOf=o=>DELIVERY_FE
 // Orders placed before discounts existed have no gross figure, so fall back to what they were charged.
 const grossOf=o=>Number(o&&o.gross_cents||0)||Number(o&&o.subtotal_cents||0)+Number(o&&o.discount_cents||0)+Number(o&&o.rent_credit_cents||0);
 const rentOf=o=>Number(o&&o.rent_credit_cents||0);
+const extraOf=o=>Number(o&&o.extra_percent||0);
+// Lines priced on the merchant's own rate are the only ones an extra percentage may touch.
+const merchantLines=o=>(o&&o.items||[]).filter(i=>(i.discount_source||'')==='merchant');
 const discOf=o=>Number(o&&o.discount_cents||0);
 const discLabels=o=>{try{return ((JSON.parse(o.discount_json||'[]'))||[]).map(a=>`${a.label} (${a.percent}%)`).join(' · ');}catch(e){return '';}};
 (()=>{
@@ -377,13 +388,15 @@ $('logout').onclick=logout;
 
 /* ---------- list ---------- */
 async function refresh(first){const d=await api('/api/admin/orders');orders=d.orders||[];const max=orders.reduce((m,o)=>Math.max(m,o.order_number),0);const newest=load('stoich-admin-seen')|0;if(!first&&max>seenMax&&seenMax)toast('New order request #'+max);seenMax=max;if(!newest)store('stoich-admin-seen',max);$('updated').textContent='Updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});render();if(selected){const f=orders.find(o=>o.id===selected.id);if(f){selected=f;if($('drawer').classList.contains('is-on'))renderDetail(false);}}}
-function counts(){return{new:orders.filter(o=>o.status==='new').length,active:orders.filter(o=>ACTIVE.includes(o.status)).length,ready:orders.filter(o=>o.status==='ready_for_pickup').length,done:orders.filter(o=>o.status==='completed').length};}
-function inView(o){if(view==='open')return !['completed','cancelled','refunded'].includes(o.status);if(view==='all')return true;if(view==='active')return ACTIVE.includes(o.status);return o.status===view;}
+function counts(){return{new:orders.filter(o=>o.status==='new').length,active:orders.filter(o=>ACTIVE.includes(o.status)).length,ready:orders.filter(o=>o.status==='ready_for_pickup').length,done:orders.filter(o=>o.status==='completed').length,merch:orders.filter(isMerchantOrder).length};}
+// An invoice here means an order placed on a merchant account, whatever its status.
+const isMerchantOrder=o=>!!(o&&(o.merchant_id||o.merchant_company));
+function inView(o){if(view==='merchants')return isMerchantOrder(o);if(view==='open')return !['completed','cancelled','refunded'].includes(o.status);if(view==='all')return true;if(view==='active')return ACTIVE.includes(o.status);return o.status===view;}
 function render(){
-  const c=counts();$('cNew').textContent=c.new;$('cActive').textContent=c.active;$('cReady').textContent=c.ready;$('cDone').textContent=c.done;
+  const c=counts();$('cNew').textContent=c.new;$('cActive').textContent=c.active;$('cReady').textContent=c.ready;$('cDone').textContent=c.done;$('cMerch').textContent=c.merch;
   document.querySelectorAll('.stat').forEach(b=>b.classList.toggle('is-on',b.dataset.view===view));
-  const chipDefs=[['open','Open'],['new','New'],['active','In progress'],['awaiting_payment','Awaiting payment'],['ready_for_pickup','Ready / in box'],['completed','Completed'],['cancelled','Cancelled'],['all','All']];
-  $('chips').innerHTML=chipDefs.map(([v,l])=>{const n=orders.filter(o=>v==='all'||(v==='open'?!['completed','cancelled','refunded'].includes(o.status):v==='active'?ACTIVE.includes(o.status):o.status===v)).length;return `<button class="chip${view===v?' is-on':''}" data-v="${v}">${l}<span class="n">${n}</span></button>`;}).join('');
+  const chipDefs=[['open','Open'],['new','New'],['active','In progress'],['awaiting_payment','Awaiting payment'],['ready_for_pickup','Ready / in box'],['completed','Completed'],['cancelled','Cancelled'],['merchants','Merchant invoices'],['all','All']];
+  $('chips').innerHTML=chipDefs.map(([v,l])=>{const n=orders.filter(o=>v==='all'||(v==='merchants'?isMerchantOrder(o):v==='open'?!['completed','cancelled','refunded'].includes(o.status):v==='active'?ACTIVE.includes(o.status):o.status===v)).length;return `<button class="chip${view===v?' is-on':''}" data-v="${v}">${l}<span class="n">${n}</span></button>`;}).join('');
   $('chips').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{view=b.dataset.v;render();});
   const q=$('search').value.trim().toLowerCase();
   const list=orders.filter(o=>(q?[o.order_number,o.customer_name,o.email,o.phone].some(v=>String(v||'').toLowerCase().includes(q)):inView(o)));
@@ -442,6 +455,7 @@ function renderDetail(reset){
     <h3 class="mono muted">Items</h3>
     <ul class="items">${(o.items||[]).map(i=>`<li><span>${Number(i.quantity)} × ${esc(i.title)}${i.variant?`<small>${esc(i.variant)}${i.sku?' · '+esc(i.sku):''}</small>`:(i.sku?`<small>${esc(i.sku)}</small>`:'')}</span><b>${money(i.line_total_cents)}</b></li>`).join('')}</ul>
     ${discOf(o)?`<div class="tot" style="border-top:0;padding-top:4px;margin-top:0"><span>Items</span><span>${money(grossOf(o))}</span></div><div class="tot" style="border-top:0;padding-top:4px;margin-top:0;color:#ff9a85"><span>Discount${discLabels(o)?`<small style="display:block;color:var(--muted);font-weight:400">${esc(discLabels(o))}</small>`:''}</span><span>-${money(discOf(o))}</span></div>`:''}
+    ${extraOf(o)?`<div class="tot" style="border-top:0;padding-top:4px;margin-top:0"><span class="muted" style="font-weight:400">includes an extra ${extraOf(o)}% on their own rates</span><span></span></div>`:''}
     ${rentOf(o)?`<div class="tot" style="border-top:0;padding-top:4px;margin-top:0;color:var(--blue)"><span>Rent credit${o.rent_credit_note?`<small style="display:block;color:var(--muted);font-weight:400">${esc(o.rent_credit_note)}</small>`:''}</span><span>-${money(rentOf(o))}</span></div>`:''}
     <div class="tot"><span>${rentOf(o)?'Amount due':'Subtotal'}</span><span>${money(o.subtotal_cents)}</span></div>${feeOf(o)?`<div class="tot" style="border-top:0;padding-top:4px;margin-top:0"><span>Delivery</span><span>${money(feeOf(o))}</span></div><div class="tot" style="border-top:0;padding-top:4px;margin-top:0"><span>Total</span><span>${money(Number(o.subtotal_cents)+feeOf(o))}</span></div>`:''}
   </section>
@@ -497,6 +511,22 @@ function renderDetail(reset){
     </form>
   </section>
 
+  ${o.merchant_company?`<section class="sec">
+    <h3 class="mono muted">Extra percentage ${extraOf(o)?`· now ${extraOf(o)}%`:''}</h3>
+    <p class="muted" style="margin:0 0 10px">On top of ${esc(o.merchant_company)}'s own rates, for this order only. It replaces whatever extra their account carries. Items that took the Black Friday price keep it.</p>
+    <form id="extraForm">
+      <div class="row2">
+        <label><span class="lab">Extra % on top</span><input id="extraPct" type="number" min="0" max="90" step="0.5" placeholder="${extraOf(o)||5}"></label>
+        <label><span class="lab">Reason (optional)</span><input id="extraWhy" placeholder="Agreed on the phone"></label>
+      </div>
+      <div class="row2" style="margin-top:12px;grid-template-columns:1fr auto">
+        <button class="btn white" type="submit">Apply extra</button>
+        ${extraOf(o)?'<button class="btn ghost" type="button" id="extraClear">Remove extra</button>':''}
+      </div>
+      <p class="muted" style="margin:10px 0 0;font-size:12.5px">${merchantLines(o).length?`${merchantLines(o).length} of the ${(o.items||[]).length} product${(o.items||[]).length===1?'':'s'} on this order ${merchantLines(o).length===1?'is':'are'} priced on their own rate, so the extra applies to ${merchantLines(o).length===1?'that one':'those'}.`:'Nothing on this order is priced on their own rate — every product took the sale price or list price — so an extra percentage would change nothing here.'}</p>
+    </form>
+  </section>`:''}
+
   <section class="sec">
     <h3 class="mono" style="color:var(--blue)">Rent credit <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">· comes off what they owe, not off the prices</span></h3>
     <form id="rentForm">
@@ -540,6 +570,16 @@ function renderDetail(reset){
     setDiscount(pct?{percent:pct,reason:$('discWhy').value}:{amount:amt,reason:$('discWhy').value});
   };
   if($('discClear'))$('discClear').onclick=()=>setDiscount({amount:0,reason:$('discWhy').value||'Discount removed'});
+  if($('extraForm')){
+    const setExtra=async body=>{try{const d=await api('/api/admin/orders/'+o.id+'/extra',{method:'POST',body:JSON.stringify(body)});toast(d.extra_percent?`Extra ${d.extra_percent}% applied to ${d.lines_repriced} line${d.lines_repriced===1?'':'s'} — ${money(d.subtotal_cents)} now due`:'Extra removed — '+money(d.subtotal_cents)+' now due');await refresh();}catch(err){toast(err.message,true);}};
+    $('extraForm').onsubmit=e=>{
+      e.preventDefault();
+      const v=$('extraPct').value.trim();
+      if(v==='')return toast('Enter the extra percentage.',true);
+      setExtra({percent:v,reason:$('extraWhy').value});
+    };
+    if($('extraClear'))$('extraClear').onclick=()=>setExtra({percent:0,reason:$('extraWhy').value||'Extra removed'});
+  }
   const setRent=async body=>{try{const d=await api('/api/admin/orders/'+o.id+'/rent-credit',{method:'POST',body:JSON.stringify(body)});toast(d.rent_credit_cents?'Rent credit applied — '+money(d.subtotal_cents)+' now due':'Rent credit removed');await refresh();}catch(err){toast(err.message,true);}};
   $('rentForm').onsubmit=e=>{
     e.preventDefault();
@@ -616,10 +656,12 @@ $('bfSeed').onclick=async()=>{
 };
 
 /* ---------- merchants ---------- */
+let STANDARD=[],lastMerchants=[];
 async function loadMerchants(){
  try{
-  const d=await api('/api/admin/merchants');const list=d.merchants||[];
+  const d=await api('/api/admin/merchants');const list=d.merchants||[];STANDARD=d.standard||[];
   $('mchList').classList.remove('muted');
+  lastMerchants=list;
   $('mchList').innerHTML=list.length?list.map(mchCard).join(''):'<p class="muted">No merchant accounts yet. Create one below and give the merchant their username and password.</p>';
   wireMerchants();
  }catch(e){$('mchList').textContent=e.message;}
@@ -628,6 +670,9 @@ function rateLine(m,r){
  const what=r.scope==='all'?'Everything else':`${SCOPE_LABEL[r.scope]||r.scope}: ${r.match_value}`;
  return `<div class="rl"><span>${esc(what)}</span><b class="${Number(r.percent)?'':'zero'}">${Number(r.percent)}%</b><button class="xrate" data-rmrate="${esc(r.id)}" data-m="${esc(m.id)}" title="Remove this rate" aria-label="Remove rate">×</button></div>`;
 }
+// A standard rate counts as on when the account carries a rate for the same brand, whatever the figure.
+function hasStd(m,sd){return (m.rates||[]).some(r=>String(r.scope)===sd.scope&&String(r.match_value||'').toLowerCase()===String(sd.match_value).toLowerCase());}
+function stdRateOf(m,sd){return (m.rates||[]).find(r=>String(r.scope)===sd.scope&&String(r.match_value||'').toLowerCase()===String(sd.match_value).toLowerCase());}
 function mchCard(m){
  const rates=(m.rates||[]).slice().sort((x,y)=>String(x.match_value||'').localeCompare(String(y.match_value||'')));
  const base=Number(m.discount_percent)||0,bonus=Number(m.bonus_percent)||0;
@@ -637,7 +682,9 @@ function mchCard(m){
   <div class="sub">${m.orders||0} order${(m.orders||0)===1?'':'s'} · ${money(m.spent_cents||0)} · ${m.last_login_at?'last signed in '+ago(m.last_login_at):'never signed in'}</div>
   ${m.notes?`<div class="sub">${esc(m.notes)}</div>`:''}
   <div class="rates">
-   <div class="rh mono muted">Rate card${bonus?` · then +${bonus}% on top of each`:''}</div>
+   <div class="rh mono muted">Set discounts · click the ones this account gets</div>
+   <div class="stdset">${STANDARD.map(sd=>{const on=hasStd(m,sd);return `<button class="std${on?' is-on':''}" data-std="${esc(sd.key)}" data-m="${esc(m.id)}" data-on="${on?1:0}">${esc(sd.label)} <b>${sd.percent}%</b></button>`;}).join('')}${STANDARD.every(sd=>hasStd(m,sd))?'':`<button class="std all" data-stdall="${esc(m.id)}">Give them all four</button>`}</div>
+   <div class="rh mono muted" style="margin-top:12px">Rate card${bonus?` · then +${bonus}% on top of each`:''}</div>
    ${rates.length?rates.map(r=>rateLine(m,r)).join(''):`<p class="muted" style="margin:4px 0;font-size:12.5px">No brand rates yet${base?` — everything is ${base}% off.`:' — this account pays list price.'}</p>`}
    <form class="rateadd" data-addrate="${esc(m.id)}">
     <select name="scope" aria-label="What the rate applies to"><option value="vendor">Brand</option><option value="product_type">Product type</option><option value="tag">Tag</option><option value="handle">One product</option><option value="all">Everything else</option></select>
@@ -657,6 +704,22 @@ function wireMerchants(){
  root.querySelectorAll('[data-pw]').forEach(b=>b.onclick=()=>{const v=prompt('New password (8+ characters). Give it to the merchant — it signs them out everywhere else.');if(v===null)return;patch(b.dataset.pw,{password:v},'Password changed');});
  root.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>patch(b.dataset.act,{active:b.dataset.en==='1'},'Account updated'));
  root.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{if(!confirm(`Delete the merchant account for ${b.dataset.co}? Past orders keep the company name. This cannot be undone.`))return;try{await api('/api/admin/merchants/'+b.dataset.rm,{method:'DELETE'});loadMerchants();toast('Merchant account deleted');}catch(e){toast(e.message,true);}});
+ root.querySelectorAll('[data-std]').forEach(b=>b.onclick=async()=>{
+  const sd=STANDARD.find(x=>x.key===b.dataset.std);if(!sd)return;
+  const m=(lastMerchants||[]).find(x=>x.id===b.dataset.m);
+  try{
+   if(b.dataset.on==='1'){const cur=m&&stdRateOf(m,sd);if(cur)await api('/api/admin/merchants/'+b.dataset.m+'/rates/'+cur.id,{method:'DELETE'});toast(sd.label+' switched off');}
+   else{await api('/api/admin/merchants/'+b.dataset.m+'/rates',{method:'POST',body:JSON.stringify({scope:sd.scope,match_value:sd.match_value,percent:sd.percent})});toast(sd.label+' set to '+sd.percent+'%');}
+   loadMerchants();
+  }catch(e){toast(e.message,true);}
+ });
+ root.querySelectorAll('[data-stdall]').forEach(b=>b.onclick=async()=>{
+  const id=b.dataset.stdall,m=(lastMerchants||[]).find(x=>x.id===id);
+  try{
+   for(const sd of STANDARD){if(m&&hasStd(m,sd))continue;await api('/api/admin/merchants/'+id+'/rates',{method:'POST',body:JSON.stringify({scope:sd.scope,match_value:sd.match_value,percent:sd.percent})});}
+   loadMerchants();toast('All four set discounts applied');
+  }catch(e){toast(e.message,true);}
+ });
  root.querySelectorAll('[data-rmrate]').forEach(b=>b.onclick=async()=>{try{await api('/api/admin/merchants/'+b.dataset.m+'/rates/'+b.dataset.rmrate,{method:'DELETE'});loadMerchants();toast('Rate removed');}catch(e){toast(e.message,true);}});
  root.querySelectorAll('[data-addrate]').forEach(f=>f.onsubmit=async e=>{
   e.preventDefault();

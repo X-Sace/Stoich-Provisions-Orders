@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS orders (
   merchant_id TEXT NOT NULL DEFAULT '',
   merchant_company TEXT NOT NULL DEFAULT '',
   rent_credit_cents INTEGER NOT NULL DEFAULT 0,
-  rent_credit_note TEXT NOT NULL DEFAULT ''
+  rent_credit_note TEXT NOT NULL DEFAULT '',
+  extra_percent REAL NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS notification_emails (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
