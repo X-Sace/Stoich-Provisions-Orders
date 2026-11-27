@@ -8,7 +8,7 @@ const PAYMENT=['Card (invoice link)','Cash (in store)'];
 const CASH_OK=['Guam store pickup'];
 let schemaReady=null;
 /* Adds the payment columns/table to existing databases once per Worker instance. */
-function ensureSchema(env){if(!schemaReady)schemaReady=(async()=>{try{await env.DB.prepare("ALTER TABLE orders ADD COLUMN payment_method TEXT NOT NULL DEFAULT ''").run();}catch(e){}await env.DB.prepare('CREATE TABLE IF NOT EXISTS email_log (id TEXT PRIMARY KEY, order_id TEXT NOT NULL DEFAULT \'\', kind TEXT NOT NULL, to_addr TEXT NOT NULL, subject TEXT NOT NULL, body TEXT NOT NULL DEFAULT \'\', html TEXT NOT NULL DEFAULT \'\', ok INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)').run();await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_email_log_order ON email_log(order_id, created_at)').run();await env.DB.prepare('CREATE TABLE IF NOT EXISTS payment_links (id TEXT PRIMARY KEY, order_id TEXT NOT NULL, url TEXT NOT NULL, amount_cents INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT \'\', sent_at TEXT NOT NULL)').run();await env.DB.prepare("CREATE TABLE IF NOT EXISTS discount_rules (id TEXT PRIMARY KEY, label TEXT NOT NULL, scope TEXT NOT NULL DEFAULT 'all', match_value TEXT NOT NULL DEFAULT '', percent REAL NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1, starts_at TEXT NOT NULL DEFAULT '', ends_at TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL)").run();await env.DB.prepare("CREATE TABLE IF NOT EXISTS merchants (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE, company TEXT NOT NULL DEFAULT '', contact_name TEXT NOT NULL DEFAULT '', email TEXT NOT NULL DEFAULT '', phone TEXT NOT NULL DEFAULT '', password_hash TEXT NOT NULL DEFAULT '', password_salt TEXT NOT NULL DEFAULT '', password_iterations INTEGER NOT NULL DEFAULT 120000, discount_percent REAL NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1, notes TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, last_login_at TEXT NOT NULL DEFAULT '')").run();await env.DB.prepare('CREATE TABLE IF NOT EXISTS merchant_sessions (token_hash TEXT PRIMARY KEY, merchant_id TEXT NOT NULL, created_at TEXT NOT NULL, expires_at TEXT NOT NULL)').run();await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_merchant_sessions_m ON merchant_sessions(merchant_id)').run();await env.DB.prepare("CREATE TABLE IF NOT EXISTS merchant_rates (id TEXT PRIMARY KEY, merchant_id TEXT NOT NULL, scope TEXT NOT NULL DEFAULT 'vendor', match_value TEXT NOT NULL DEFAULT '', percent REAL NOT NULL DEFAULT 0, created_at TEXT NOT NULL)").run();await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_merchant_rates_m ON merchant_rates(merchant_id)').run();try{await env.DB.prepare('ALTER TABLE merchants ADD COLUMN bonus_percent REAL NOT NULL DEFAULT 0').run();}catch(e){}for(const col of ["discount_cents INTEGER NOT NULL DEFAULT 0","gross_cents INTEGER NOT NULL DEFAULT 0","discount_json TEXT NOT NULL DEFAULT '[]'","merchant_id TEXT NOT NULL DEFAULT ''","merchant_company TEXT NOT NULL DEFAULT ''","rent_credit_cents INTEGER NOT NULL DEFAULT 0","rent_credit_note TEXT NOT NULL DEFAULT ''"]){try{await env.DB.prepare('ALTER TABLE orders ADD COLUMN '+col).run();}catch(e){}}})().catch(e=>{schemaReady=null;throw e;});return schemaReady;}
+function ensureSchema(env){if(!schemaReady)schemaReady=(async()=>{try{await env.DB.prepare("ALTER TABLE orders ADD COLUMN payment_method TEXT NOT NULL DEFAULT ''").run();}catch(e){}await env.DB.prepare('CREATE TABLE IF NOT EXISTS email_log (id TEXT PRIMARY KEY, order_id TEXT NOT NULL DEFAULT \'\', kind TEXT NOT NULL, to_addr TEXT NOT NULL, subject TEXT NOT NULL, body TEXT NOT NULL DEFAULT \'\', html TEXT NOT NULL DEFAULT \'\', ok INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)').run();await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_email_log_order ON email_log(order_id, created_at)').run();await env.DB.prepare('CREATE TABLE IF NOT EXISTS payment_links (id TEXT PRIMARY KEY, order_id TEXT NOT NULL, url TEXT NOT NULL, amount_cents INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT \'\', sent_at TEXT NOT NULL)').run();await env.DB.prepare("CREATE TABLE IF NOT EXISTS discount_rules (id TEXT PRIMARY KEY, label TEXT NOT NULL, scope TEXT NOT NULL DEFAULT 'all', match_value TEXT NOT NULL DEFAULT '', percent REAL NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1, starts_at TEXT NOT NULL DEFAULT '', ends_at TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL)").run();await env.DB.prepare("CREATE TABLE IF NOT EXISTS merchants (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE, company TEXT NOT NULL DEFAULT '', contact_name TEXT NOT NULL DEFAULT '', email TEXT NOT NULL DEFAULT '', phone TEXT NOT NULL DEFAULT '', password_hash TEXT NOT NULL DEFAULT '', password_salt TEXT NOT NULL DEFAULT '', password_iterations INTEGER NOT NULL DEFAULT 120000, discount_percent REAL NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1, notes TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, last_login_at TEXT NOT NULL DEFAULT '')").run();await env.DB.prepare('CREATE TABLE IF NOT EXISTS merchant_sessions (token_hash TEXT PRIMARY KEY, merchant_id TEXT NOT NULL, created_at TEXT NOT NULL, expires_at TEXT NOT NULL)').run();await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_merchant_sessions_m ON merchant_sessions(merchant_id)').run();await env.DB.prepare("CREATE TABLE IF NOT EXISTS merchant_rates (id TEXT PRIMARY KEY, merchant_id TEXT NOT NULL, scope TEXT NOT NULL DEFAULT 'vendor', match_value TEXT NOT NULL DEFAULT '', percent REAL NOT NULL DEFAULT 0, created_at TEXT NOT NULL)").run();await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_merchant_rates_m ON merchant_rates(merchant_id)').run();try{await env.DB.prepare('ALTER TABLE merchants ADD COLUMN bonus_percent REAL NOT NULL DEFAULT 0').run();}catch(e){}for(const col of ["discount_cents INTEGER NOT NULL DEFAULT 0","gross_cents INTEGER NOT NULL DEFAULT 0","discount_json TEXT NOT NULL DEFAULT '[]'","merchant_id TEXT NOT NULL DEFAULT ''","merchant_company TEXT NOT NULL DEFAULT ''","rent_credit_cents INTEGER NOT NULL DEFAULT 0","rent_credit_note TEXT NOT NULL DEFAULT ''","extra_percent REAL NOT NULL DEFAULT 0"]){try{await env.DB.prepare('ALTER TABLE orders ADD COLUMN '+col).run();}catch(e){}}})().catch(e=>{schemaReady=null;throw e;});return schemaReady;}
 function validPayUrl(v){try{const u=new URL(v);return u.protocol==='https:'&&!!u.hostname&&v.length<=1000;}catch(e){return false;}}
 const now=()=>new Date().toISOString();
 const clean=(v,n=500)=>String(v??'').trim().slice(0,n);
@@ -101,6 +101,16 @@ async function loadRules(env){const r=await env.DB.prepare('SELECT * FROM discou
    which beats a brand, which beats the account's catch-all rate. That is what lets a merchant whose
    account is "10% on everything" still be set to nothing on Gtechniq: the brand rate wins, even at 0. */
 const SCOPE_RANK={handle:4,tag:3,product_type:2,vendor:1,all:0};
+/* The rates every merchant account is offered. The order desk shows these as switches, so setting
+   up an account is clicking the ones it gets rather than typing percentages. Gtechniq sits here at
+   0 on purpose: switching it on is how you record that an account gets nothing off that brand,
+   which then overrides any catch-all rate on the account. */
+const MERCHANT_STANDARD=[
+ {key:'kcx',label:'Koch-Chemie (KCX)',scope:'vendor',match_value:'Koch-Chemie',percent:5},
+ {key:'ps',label:'P&S',scope:'vendor',match_value:'P&S',percent:20},
+ {key:'gtechniq',label:'Gtechniq',scope:'vendor',match_value:'Gtechniq',percent:0},
+ {key:'trc',label:'The Rag Company (TRC)',scope:'vendor',match_value:'The Rag Company',percent:5}
+];
 /* The merchant price for one line: the most specific rate on the account, then the account's extra
    percentage compounded on top of it (20% then 5% on top is 24%, not 25%). */
 function merchantPercentFor(merchant,rates,meta){
@@ -125,11 +135,15 @@ function priceCart(items,rules,merchant,at,rates){
  const lines=[],applied=new Map();let gross=0,discount=0;
  for(const it of items){
   const meta=it._meta||{};gross+=it.line_total_cents;
-  let best=null;
+  let best=null,mpBase=0;
   if(meta.verified!==false){
    for(const r of live)if(ruleMatches(r,meta)&&(!best||Number(r.percent)>Number(best.percent)))best=r;
    const mp=merchantPercentFor(merchant,rates,meta);
-   if(mp.percent>0&&(!best||mp.percent>Number(best.percent))){
+   mpBase=mp.base||0;
+   /* On a tie the merchant's own rate wins. The price is identical either way, but the line is then
+      attributed to their rate rather than the sale, which is what lets an extra percentage apply to
+      it. Resolved the other way, an extra would quietly skip tied lines while the sale was running. */
+   if(mp.percent>0&&(!best||mp.percent>=Number(best.percent))){
     const who=merchant.company||merchant.username;
     const what=mp.rate&&normStr(mp.rate.scope)!=='all'?` · ${mp.rate.match_value}`:'';
     best={id:'merchant:'+(mp.rate?mp.rate.id:'base'),label:`${who} price${what}`,percent:mp.percent};
@@ -137,7 +151,10 @@ function priceCart(items,rules,merchant,at,rates){
   }
   const pct=best?Number(best.percent):0,off=pct?Math.round(it.line_total_cents*pct/100):0;
   if(off>0){discount+=off;const cur=applied.get(best.id)||{id:best.id,label:best.label,percent:pct,cents:0};cur.cents+=off;applied.set(best.id,cur);}
-  lines.push({...it,discount_percent:pct,discount_cents:off,discount_label:pct?best.label:'',final_line_cents:it.line_total_cents-off});
+  /* source and base_percent are what let a later order-level extra be worked out exactly: the base
+     is the brand or sale rate before any extra, and the source says whether an extra may touch it. */
+  const source=!best?'':String(best.id).startsWith('merchant:')?'merchant':'sale';
+  lines.push({...it,discount_percent:pct,discount_cents:off,discount_label:pct?best.label:'',discount_source:source,discount_base_percent:source==='merchant'?(Number(mpBase)||0):pct,final_line_cents:it.line_total_cents-off});
  }
  return{lines,gross_cents:gross,discount_cents:discount,subtotal_cents:gross-discount,applied:[...applied.values()].sort((a,b)=>b.cents-a.cents)};
 }
@@ -204,7 +221,7 @@ if(dr&&req.method==='PATCH'){let b;try{b=await req.json()}catch{return res({erro
 if(dr&&req.method==='DELETE'){const r=await env.DB.prepare('DELETE FROM discount_rules WHERE id=?').bind(dr[1]).run();if(!r.meta?.changes)return res({error:'Discount not found.'},404);return res({ok:true});}
 
 /* ---------- merchant accounts ---------- */
-if(p==='/api/admin/merchants'&&req.method==='GET'){const r=await env.DB.prepare('SELECT * FROM merchants ORDER BY company, username').all();const rows=(r.results||[]).map(merchantRow);const counts=await env.DB.prepare("SELECT merchant_id, COUNT(*) n, SUM(subtotal_cents) spent FROM orders WHERE merchant_id<>'' GROUP BY merchant_id").all();const by={};for(const c of counts.results||[])by[c.merchant_id]={orders:Number(c.n)||0,spent_cents:Number(c.spent)||0};const rt=await env.DB.prepare('SELECT * FROM merchant_rates ORDER BY match_value').all();const rates={};for(const r of rt.results||[])(rates[r.merchant_id]=rates[r.merchant_id]||[]).push({id:r.id,scope:r.scope,match_value:r.match_value,percent:Number(r.percent)});return res({merchants:rows.map(m=>({...m,...(by[m.id]||{orders:0,spent_cents:0}),rates:rates[m.id]||[]})),scopes:SCOPES});}
+if(p==='/api/admin/merchants'&&req.method==='GET'){const r=await env.DB.prepare('SELECT * FROM merchants ORDER BY company, username').all();const rows=(r.results||[]).map(merchantRow);const counts=await env.DB.prepare("SELECT merchant_id, COUNT(*) n, SUM(subtotal_cents) spent FROM orders WHERE merchant_id<>'' GROUP BY merchant_id").all();const by={};for(const c of counts.results||[])by[c.merchant_id]={orders:Number(c.n)||0,spent_cents:Number(c.spent)||0};const rt=await env.DB.prepare('SELECT * FROM merchant_rates ORDER BY match_value').all();const rates={};for(const r of rt.results||[])(rates[r.merchant_id]=rates[r.merchant_id]||[]).push({id:r.id,scope:r.scope,match_value:r.match_value,percent:Number(r.percent)});return res({merchants:rows.map(m=>({...m,...(by[m.id]||{orders:0,spent_cents:0}),rates:rates[m.id]||[]})),scopes:SCOPES,standard:MERCHANT_STANDARD});}
 if(p==='/api/admin/merchants'&&req.method==='POST'){let b;try{b=await req.json()}catch{return res({error:'Invalid request body.'},400)}
  const username=clean(b.username,40).toLowerCase(),company=clean(b.company,150),password=String(b.password??'');
  if(!USERNAME_RE.test(username))return res({error:'Username must be 3–40 characters: lowercase letters, numbers, dots, dashes or underscores.'},400);
@@ -254,6 +271,38 @@ if(mrt&&req.method==='POST'){let b;try{b=await req.json()}catch{return res({erro
 const mrd=p.match(/^\/api\/admin\/merchants\/([0-9a-f-]{36})\/rates\/([0-9a-f-]{36})$/);
 if(mrd&&req.method==='DELETE'){const r=await env.DB.prepare('DELETE FROM merchant_rates WHERE id=? AND merchant_id=?').bind(mrd[2],mrd[1]).run();if(!r.meta?.changes)return res({error:'Rate not found.'},404);return res({ok:true});}
 
+/* ---------- an extra percentage on one order ----------
+   Replaces whatever extra the account carries, for this order only, and only touches lines priced
+   on the merchant's own rate. A line that took the public sale price keeps it: the sale is the sale. */
+const oe=p.match(/^\/api\/admin\/orders\/([^/]+)\/extra$/);
+if(oe&&req.method==='POST'){let b;try{b=await req.json()}catch{return res({error:'Invalid request body.'},400)}
+ const order=await env.DB.prepare('SELECT * FROM orders WHERE id=?').bind(oe[1]).first();
+ if(!order)return res({error:'Order not found.'},404);
+ const pct=b.percent===''||b.percent==null?0:Number(b.percent);
+ if(!ratePctOk(pct))return res({error:'Enter a percentage between 0 and 90.'},400);
+ let items=[];try{items=JSON.parse(order.items_json||'[]')||[];}catch(e){}
+ if(!items.length)return res({error:'This order has no items to reprice.'},400);
+ let gross=0,discount=0,touched=0;
+ const out=items.map(it=>{
+  const lineTotal=Number(it.line_total_cents)||0;gross+=lineTotal;
+  if((it.discount_source||'')!=='merchant'){discount+=Number(it.discount_cents)||0;return it;}
+  const base=Number(it.discount_base_percent??it.discount_percent)||0;
+  const eff=Math.round((1-(1-base/100)*(1-pct/100))*100000)/1000;
+  const off=eff?Math.round(lineTotal*eff/100):0;
+  discount+=off;touched++;
+  return{...it,discount_percent:eff,discount_cents:off,final_line_cents:lineTotal-off};
+ });
+ if(!touched)return res({error:'Nothing on this order is priced on the merchant rate, so an extra percentage would change nothing here.'},400);
+ const rent=Number(order.rent_credit_cents||0);
+ if(discount+rent>gross)return res({error:'That leaves less than the credit already on this order.'},400);
+ const applied=new Map();
+ for(const l of out){const off=Number(l.discount_cents)||0;if(off<=0)continue;const k=l.discount_label||'Discount';const cur=applied.get(k)||{id:k,label:k,percent:Number(l.discount_percent)||0,cents:0};cur.cents+=off;applied.set(k,cur);}
+ const ts=now(),subtotal=gross-discount-rent;
+ const why=clean(b.reason,150);
+ const line=`[${ts.slice(0,16).replace('T',' ')}] Extra ${pct}% set on this order${why?' ('+why+')':''}, on top of the merchant rate on ${touched} line${touched===1?'':'s'}. Amount due is now $${(subtotal/100).toFixed(2)}.`;
+ await env.DB.prepare('UPDATE orders SET items_json=?,gross_cents=?,discount_cents=?,discount_json=?,subtotal_cents=?,extra_percent=?,internal_notes=?,updated_at=? WHERE id=?')
+  .bind(JSON.stringify(out),gross,discount,JSON.stringify([...applied.values()].sort((a,b)=>b.cents-a.cents)),subtotal,pct,clean(`${order.internal_notes?order.internal_notes+'\n':''}${line}`,5000),ts,order.id).run();
+ return res({ok:true,extra_percent:pct,lines_repriced:touched,gross_cents:gross,discount_cents:discount,rent_credit_cents:rent,subtotal_cents:subtotal});}
 /* ---------- rent credit on one invoice ----------
    Not a discount: the goods keep their price and the credit comes off what is owed, so it is
    recorded and shown separately. It still lowers the subtotal that payment links and balances read. */
